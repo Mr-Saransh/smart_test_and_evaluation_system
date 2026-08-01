@@ -33,7 +33,18 @@ export function Login() {
         return;
       }
 
-      const from = location.state?.from?.pathname || '/';
+      const rolePaths = {
+        institute_admin: '/admin',
+        teacher: '/teacher',
+        student: '/student',
+        parent: '/parent',
+        super_admin: '/superadmin'
+      };
+      
+      const from = location.state?.from?.pathname && location.state.from.pathname !== '/' 
+        ? location.state.from.pathname 
+        : rolePaths[res.user.role] || '/';
+        
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
