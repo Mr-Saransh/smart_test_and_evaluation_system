@@ -19,6 +19,7 @@ export function QuestionBank() {
   const [topic, setTopic] = useState('');
   const [chapter, setChapter] = useState('');
   const [importing, setImporting] = useState(false);
+  const [rawText, setRawText] = useState('');
 
   // PDF
   const fileInputRef = useRef(null);
@@ -42,7 +43,7 @@ export function QuestionBank() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/questions/upload-pdf`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('av2_token')}`
         },
         body: formData
       });
@@ -59,6 +60,23 @@ export function QuestionBank() {
     } finally {
       setImporting(false);
       e.target.value = null; // reset
+    }
+  };
+
+  const handleTextUpload = async () => {
+    if (!rawText.trim()) return toast('Please enter text to extract');
+    setImporting(true);
+    try {
+      const data = await POST('/questions/extract-text', { text: rawText });
+      setExtractedQuestions(data.questions);
+      setShowImport(false);
+      setShowReview(true);
+      toast(`Extracted ${data.questions.length} questions`);
+    } catch (err) {
+      toast(err.message || 'Error extracting text');
+    } finally {
+      setImporting(false);
+      setRawText('');
     }
   };
 
@@ -164,13 +182,30 @@ export function QuestionBank() {
         <div className="modal-overlay" onClick={() => setShowImport(false)}>
           <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Import Options</h2>
+              <h2>Import Questions</h2>
               <button className="btn-icon" onClick={() => setShowImport(false)}>✕</button>
             </div>
-            <div className="empty" style={{ padding: 40 }}>
-               <h3>Use "Upload PDF" button to extract from PDF</h3>
-               <p className="muted">Bulk Text import has been replaced by the new automated PDF workflow.</p>
-               <button className="btn bp mt-4" onClick={() => { setShowImport(false); fileInputRef.current?.click(); }}>Select PDF File</button>
+            <div className="g3" style={{ padding: 20 }}>
+               <div>
+                 <h3 className="h3">Option 1: Upload PDF</h3>
+                 <p className="muted" style={{ marginBottom: 16 }}>Upload a PDF containing questions formatted with 1., 2., etc. and A), B) options.</p>
+                 <button className="btn bd" onClick={() => { setShowImport(false); fileInputRef.current?.click(); }}>Select PDF File</button>
+               </div>
+               <hr />
+               <div>
+                 <h3 className="h3">Option 2: Paste Text</h3>
+                 <p className="muted" style={{ marginBottom: 8 }}>Paste your raw text below using the same numbered format.</p>
+                 <textarea 
+                   className="inp" 
+                   style={{ minHeight: 200, width: '100%', marginBottom: 16 }} 
+                   placeholder="1. What is...\nA) Option A\nB) Option B\nAnswer: A"
+                   value={rawText}
+                   onChange={e => setRawText(e.target.value)}
+                 />
+                 <button className="btn bp" disabled={importing} onClick={handleTextUpload}>
+                   {importing ? 'Extracting...' : 'Extract from Text'}
+                 </button>
+               </div>
             </div>
           </div>
         </div>

@@ -39,11 +39,38 @@ async function create(req, res, next) {
 
 async function getMyInstitute(req, res, next) {
   try {
-    const result = await db.query(
-      'SELECT * FROM institutes WHERE admin_id = $1 AND is_active = true',
-      [req.user.id]
-    );
-    if (result.rows.length === 0) {
+    let result;
+    if (req.user.role === 'institute_admin') {
+      result = await db.query(
+        'SELECT * FROM institutes WHERE admin_id = $1 AND is_active = true',
+        [req.user.id]
+      );
+    } else if (req.user.role === 'teacher') {
+      result = await db.query(
+        `SELECT i.* FROM institutes i 
+         JOIN teachers t ON i.id = t.institute_id 
+         WHERE t.user_id = $1 AND i.is_active = true`,
+        [req.user.id]
+      );
+    } else if (req.user.role === 'student') {
+      result = await db.query(
+        `SELECT i.* FROM institutes i 
+         JOIN students s ON i.id = s.institute_id 
+         WHERE s.user_id = $1 AND i.is_active = true`,
+        [req.user.id]
+      );
+    } else if (req.user.role === 'parent') {
+      result = await db.query(
+        `SELECT i.* FROM institutes i 
+         JOIN students s ON i.id = s.institute_id 
+         WHERE s.parent_user_id = $1 AND i.is_active = true LIMIT 1`,
+        [req.user.id]
+      );
+    } else {
+      return res.status(403).json({ error: 'Invalid role' });
+    }
+
+    if (!result || result.rows.length === 0) {
       return res.status(404).json({ error: 'No institute found' });
     }
     const inst = result.rows[0];

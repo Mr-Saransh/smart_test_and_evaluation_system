@@ -189,6 +189,49 @@ async function taxonomy(req, res, next) {
   } catch (err) { next(err); }
 }
 
+function parseTextToQuestions(text) {
+  const questions = [];
+  const blocks = text.split(/\n(?=\d+\.)/); // split by "1.", "2."
+
+  for (const block of blocks) {
+    const qMatch = block.match(/^\d+\.\s*(.+)/);
+    if (!qMatch) continue;
+    
+    let textLine = qMatch[1].trim();
+    const options = [];
+    let correct_index = null;
+
+    // Extract options (A, B, C, D)
+    const optRegex = /([A-D])[\)\.]\s+([^\n]+)/g;
+    let optMatch;
+    while ((optMatch = optRegex.exec(block)) !== null) {
+      options.push(optMatch[2].trim());
+    }
+
+    // Extract Answer
+    const ansRegex = /Ans(?:wer)?:\s*([A-D])/i;
+    const ansMatch = block.match(ansRegex);
+    if (ansMatch) {
+      const letter = ansMatch[1].toUpperCase();
+      correct_index = letter.charCodeAt(0) - 65; // A=0, B=1
+    }
+
+    // If we found a question and at least 2 options, save it
+    if (textLine && options.length >= 2) {
+      questions.push({
+        type: 'mcq',
+        text: textLine,
+        options,
+        correct_index,
+        marks: 4,
+        negative_marks: 1,
+        difficulty: 'medium'
+      });
+    }
+  }
+  return questions;
+}
+
 // PDF upload endpoint
 async function uploadPdf(req, res, next) {
   try {
@@ -203,58 +246,26 @@ async function uploadPdf(req, res, next) {
     
     const pdfParse = require('pdf-parse');
     const data = await pdfParse(req.file.buffer);
-    const text = data.text;
-
-    // Rule-based regex parser
-    // Matches "1. Question text"
-    // "A) Option A"
-    // "B) Option B"
-    // "Ans: A" or "Answer: A"
-    const questions = [];
-    const blocks = text.split(/\n(?=\d+\.)/); // split by "1.", "2."
-
-    for (const block of blocks) {
-      const qMatch = block.match(/^\d+\.\s*(.+)/);
-      if (!qMatch) continue;
-      
-      let textLine = qMatch[1].trim();
-      const options = [];
-      let correct_index = null;
-
-      // Extract options (A, B, C, D)
-      const optRegex = /([A-D])[\)\.]\s+([^\n]+)/g;
-      let optMatch;
-      while ((optMatch = optRegex.exec(block)) !== null) {
-        options.push(optMatch[2].trim());
-      }
-
-      // Extract Answer
-      const ansRegex = /Ans(?:wer)?:\s*([A-D])/i;
-      const ansMatch = block.match(ansRegex);
-      if (ansMatch) {
-        const letter = ansMatch[1].toUpperCase();
-        correct_index = letter.charCodeAt(0) - 65; // A=0, B=1
-      }
-
-      // If we found a question and at least 2 options, save it
-      if (textLine && options.length >= 2) {
-        questions.push({
-          type: 'mcq',
-          text: textLine,
-          options,
-          correct_index,
-          marks: 4,
-          negative_marks: 1,
-          difficulty: 'medium'
-        });
-      }
-    }
-
-    // The PDF is implicitly discarded when the request ends (in memory).
+    
+    const questions = parseTextToQuestions(data.text);
     res.json({ questions });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { create, bulkCreate, update, list, remove, taxonomy, uploadPdf };
+// Text extraction endpoint
+async function extractText(req, res, next) {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: 'No text provided' });
+    }
+    const questions = parseTextToQuestions(text);
+    res.json({ questions });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, bulkCreate, update, list, remove, taxonomy, uploadPdf, extractText };
