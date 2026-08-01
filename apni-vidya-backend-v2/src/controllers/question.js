@@ -1,6 +1,5 @@
 const db = require('../config/db');
 const { hasInstituteAccess } = require('../utils/access');
-const pdfParse = require('pdf-parse');
 
 async function create(req, res, next) {
   try {
@@ -197,6 +196,12 @@ async function uploadPdf(req, res, next) {
       return res.status(400).json({ error: 'No PDF file uploaded' });
     }
 
+    // Polyfill missing browser APIs in Vercel Node runtime for pdf.js
+    if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = class DOMMatrix {};
+    if (typeof global.ImageData === 'undefined') global.ImageData = class ImageData {};
+    if (typeof global.Path2D === 'undefined') global.Path2D = class Path2D {};
+    
+    const pdfParse = require('pdf-parse');
     const data = await pdfParse(req.file.buffer);
     const text = data.text;
 
