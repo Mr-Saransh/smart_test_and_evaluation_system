@@ -1,0 +1,31 @@
+.loader {
+  border: 3px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loader-sm { width: 16px; height: 16px; border-width: 2px; }
+.loader-md { width: 24px; height: 24px; border-width: 3px; }
+.loader-lg { width: 40px; height: 40px; border-width: 4px; }
+
+.loader-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  width: 100%;
+}
+
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--bg-primary);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

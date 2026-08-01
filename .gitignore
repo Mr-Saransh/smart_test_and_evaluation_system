@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+coverage/
+*.log
+.DS_Store
+
+# Backend
+apni-vidya-backend-v2/node_modules/
+apni-vidya-backend-v2/.env
+
+# Frontend
+apni-vidya-frontend/node_modules/
+apni-vidya-frontend/dist/
+apni-vidya-frontend/.env
