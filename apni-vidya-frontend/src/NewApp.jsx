@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AppRouter } from './AppRouter';
 import { onToast } from './utils/api';
@@ -30,9 +31,11 @@ function ToastContainer() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastContainer />
-      <AppRouter />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <ToastContainer />
+        <AppRouter />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
