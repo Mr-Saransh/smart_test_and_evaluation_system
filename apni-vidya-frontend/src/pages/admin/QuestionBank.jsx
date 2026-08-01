@@ -39,7 +39,7 @@ export function QuestionBank() {
     setImporting(true);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/questions/upload-pdf`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/questions/upload-pdf`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
