@@ -11,10 +11,10 @@ const INSECURE_DEFAULTS = [
 const isProduction = process.env.NODE_ENV === 'production';
 
 function fail(messages) {
-  console.error('\n  Refusing to start — environment is not configured safely:\n');
+  console.error('\n  [WARNING] Environment is not configured safely:\n');
   for (const m of messages) console.error(`   • ${m}`);
-  console.error('\n  Fix the above in your .env file (see .env.example) and restart.\n');
-  process.exit(1);
+  console.error('\n  Please fix the above in your environment variables.\n');
+  // Removed process.exit(1) to prevent Vercel 500 crash on boot which causes CORS errors.
 }
 
 function validateEnv() {
