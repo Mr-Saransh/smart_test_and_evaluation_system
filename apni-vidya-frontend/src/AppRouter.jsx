@@ -29,7 +29,7 @@ const Enrollments = lazy(() => import('./pages/admin/Enrollments').then(m => ({ 
 const Attendance = lazy(() => import('./pages/admin/Attendance').then(m => ({ default: m.Attendance })));
 const Fees = lazy(() => import('./pages/admin/Fees').then(m => ({ default: m.Fees })));
 const Tests = lazy(() => import('./pages/admin/Tests').then(m => ({ default: m.Tests })));
-const QuestionBank = lazy(() => import('./pages/admin/QuestionBank').then(m => ({ default: m.QuestionBank })));
+const LiveClasses = lazy(() => import('./pages/shared/LiveClasses').then(m => ({ default: m.LiveClasses })));
 const Timetable = lazy(() => import('./pages/admin/Timetable').then(m => ({ default: m.Timetable })));
 const Planner = lazy(() => import('./pages/admin/Planner').then(m => ({ default: m.Planner })));
 const StudyMaterials = lazy(() => import('./pages/admin/StudyMaterials').then(m => ({ default: m.StudyMaterials })));
@@ -97,7 +97,7 @@ export function AppRouter() {
         <Route path="attendance" element={<Suspense fallback={<LoadingFallback />}><Attendance /></Suspense>} />
         <Route path="fees" element={<Suspense fallback={<LoadingFallback />}><Fees /></Suspense>} />
         <Route path="tests" element={<Suspense fallback={<LoadingFallback />}><Tests /></Suspense>} />
-        <Route path="questions" element={<Suspense fallback={<LoadingFallback />}><QuestionBank /></Suspense>} />
+        <Route path="live-classes" element={<Suspense fallback={<LoadingFallback />}><LiveClasses /></Suspense>} />
         <Route path="timetable" element={<Suspense fallback={<LoadingFallback />}><Timetable /></Suspense>} />
         <Route path="planner" element={<Suspense fallback={<LoadingFallback />}><Planner /></Suspense>} />
         <Route path="materials" element={<Suspense fallback={<LoadingFallback />}><StudyMaterials /></Suspense>} />
@@ -111,7 +111,7 @@ export function AppRouter() {
         <Route path="students" element={<Suspense fallback={<LoadingFallback />}><Students /></Suspense>} />
         <Route path="attendance" element={<Suspense fallback={<LoadingFallback />}><Attendance /></Suspense>} />
         <Route path="tests" element={<Suspense fallback={<LoadingFallback />}><Tests /></Suspense>} />
-        <Route path="questions" element={<Suspense fallback={<LoadingFallback />}><QuestionBank /></Suspense>} />
+        <Route path="live-classes" element={<Suspense fallback={<LoadingFallback />}><LiveClasses /></Suspense>} />
         <Route path="timetable" element={<Suspense fallback={<LoadingFallback />}><Timetable /></Suspense>} />
         <Route path="planner" element={<Suspense fallback={<LoadingFallback />}><Planner /></Suspense>} />
         <Route path="materials" element={<Suspense fallback={<LoadingFallback />}><StudyMaterials /></Suspense>} />

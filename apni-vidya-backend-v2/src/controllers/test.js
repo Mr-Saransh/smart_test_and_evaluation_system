@@ -20,7 +20,7 @@ async function create(req, res, next) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { institute_id, batch_id, course_id, title, subject, chapter, difficulty, duration_min, question_ids, number_of_questions, start_date, end_date, attempt_limit } = req.body;
+    const { institute_id, batch_id, course_id, title, subject, chapter, difficulty, duration_min, question_ids, raw_questions, number_of_questions, start_date, end_date, attempt_limit } = req.body;
     if (!institute_id || !batch_id || !title) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'institute_id, batch_id and title are required' });
@@ -52,9 +52,25 @@ async function create(req, res, next) {
       }
     }
 
+    // If raw_questions are provided (from frontend PDF/Text parsing), bulk insert them
+    if (Array.isArray(raw_questions) && raw_questions.length > 0) {
+      for (const q of raw_questions) {
+        const qType = q.type === 'subjective' ? 'subjective' : 'mcq';
+        const r = await client.query(
+          `INSERT INTO questions (institute_id, created_by, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+          [institute_id, req.user.id, subject || 'General', q.topic || null, q.chapter || null, qType, q.text,
+           qType === 'mcq' ? JSON.stringify(q.options) : null,
+           qType === 'mcq' && q.correct_index != null ? q.correct_index : null,
+           q.marks || 4, q.negative_marks || 0, q.difficulty || 'medium']
+        );
+        selectedQuestionIds.push(r.rows[0].id);
+      }
+    }
+
     if (!Array.isArray(selectedQuestionIds) || selectedQuestionIds.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'question_ids array or number_of_questions is required' });
+      return res.status(400).json({ error: 'question_ids, raw_questions or number_of_questions is required' });
     }
 
     // Pull marks for the selected questions to compute total.

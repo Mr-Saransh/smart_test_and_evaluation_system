@@ -11,7 +11,7 @@ export function Batches() {
   const [loading, setLoading] = useState(true);
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', start_date: '', end_date: '' });
+  const [form, setForm] = useState({ name: '', description: '', start_date: '', end_date: '', meet_link: '' });
   const [saving, setSaving] = useState(false);
 
   const load = () => {
@@ -21,8 +21,8 @@ export function Batches() {
   useEffect(load, [institute]);
 
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
-  const openCreate = () => { setEditing(null); setForm({ name: '', description: '', start_date: '', end_date: '' }); setShow(true); };
-  const openEdit = (b) => { setEditing(b); setForm({ name: b.name, description: b.description || '', start_date: b.start_date?.split('T')[0] || '', end_date: b.end_date?.split('T')[0] || '' }); setShow(true); };
+  const openCreate = () => { setEditing(null); setForm({ name: '', description: '', start_date: '', end_date: '', meet_link: '' }); setShow(true); };
+  const openEdit = (b) => { setEditing(b); setForm({ name: b.name, description: b.description || '', start_date: b.start_date?.split('T')[0] || '', end_date: b.end_date?.split('T')[0] || '', meet_link: b.meet_link || '' }); setShow(true); };
 
   const save = async () => {
     if (!form.name) { toast('Batch name is required'); return; }
@@ -91,6 +91,7 @@ export function Batches() {
               <div className="field"><label>Start Date</label><input className="inp" type="date" value={form.start_date} onChange={set('start_date')} /></div>
               <div className="field"><label>End Date</label><input className="inp" type="date" value={form.end_date} onChange={set('end_date')} /></div>
             </div>
+            <div className="field"><label>Google Meet Link</label><input className="inp" value={form.meet_link} onChange={set('meet_link')} placeholder="https://meet.google.com/xxx-xxxx-xxx" /></div>
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
               <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</button>

@@ -5,7 +5,7 @@
 import {
   HomeIcon, BuildingIcon, UsersIcon, UserCheckIcon, BookOpenIcon,
   CalendarIcon, FileTextIcon, CurrencyIcon, ClipboardIcon, SettingsIcon,
-  MegaphoneIcon, BellIcon, AwardIcon, ClockIcon, TrendingUpIcon, ShieldIcon, CpuIcon
+  MegaphoneIcon, BellIcon, AwardIcon, ClockIcon, TrendingUpIcon, ShieldIcon, CpuIcon, VideoIcon
 } from '../components/common/Icons';
 
 /* ─── Roles ─── */
@@ -55,7 +55,7 @@ export const NAV_ITEMS = {
     { id: 'attendance', label: 'Attendance', path: '/admin/attendance', icon: ClipboardIcon },
     { id: 'fees', label: 'Fees', path: '/admin/fees', icon: CurrencyIcon },
     { id: 'tests', label: 'Tests', path: '/admin/tests', icon: FileTextIcon },
-    { id: 'questions', label: 'Question Bank', path: '/admin/questions', icon: BookOpenIcon },
+    { id: 'live-classes', label: 'Live Classes', path: '/admin/live-classes', icon: VideoIcon },
     { id: 'timetable', label: 'Timetable', path: '/admin/timetable', icon: CalendarIcon },
     { id: 'planner', label: 'Study Planner', path: '/admin/planner', icon: ClockIcon },
     { id: 'materials', label: 'Study Materials', path: '/admin/materials', icon: BookOpenIcon },
@@ -70,7 +70,7 @@ export const NAV_ITEMS = {
     { id: 'home', label: 'Dashboard', path: '/teacher', icon: HomeIcon },
     { id: 'attendance', label: 'Attendance', path: '/teacher/attendance', icon: ClipboardIcon },
     { id: 'tests', label: 'Tests', path: '/teacher/tests', icon: FileTextIcon },
-    { id: 'questions', label: 'Question Bank', path: '/teacher/questions', icon: BookOpenIcon },
+    { id: 'live-classes', label: 'Live Classes', path: '/teacher/live-classes', icon: VideoIcon },
     { id: 'materials', label: 'Study Materials', path: '/teacher/materials', icon: BookOpenIcon },
     { id: 'timetable', label: 'Schedule', path: '/teacher/timetable', icon: CalendarIcon },
     { id: 'planner', label: 'Planner', path: '/teacher/planner', icon: ClockIcon },
@@ -84,6 +84,7 @@ export const NAV_ITEMS = {
     { id: 'home', label: 'Dashboard', path: '/student', icon: HomeIcon },
     { id: 'timetable', label: 'Timetable', path: '/student/timetable', icon: CalendarIcon },
     { id: 'tests', label: 'Tests', path: '/student/tests', icon: FileTextIcon },
+    { id: 'live-classes', label: 'Live Classes', path: '/student/live-classes', icon: VideoIcon },
     { id: 'materials', label: 'Study Material', path: '/student/materials', icon: BookOpenIcon },
     { id: 'planner', label: 'Study Planner', path: '/student/planner', icon: ClockIcon },
     { id: 'progress', label: 'Progress', path: '/student/progress', icon: TrendingUpIcon },

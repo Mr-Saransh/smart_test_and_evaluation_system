@@ -3,7 +3,7 @@ const { hasInstituteAccess } = require('../utils/access');
 
 async function create(req, res, next) {
   try {
-    const { institute_id, name, description, start_date, end_date } = req.body;
+    const { institute_id, name, description, start_date, end_date, meet_link } = req.body;
 
     if (!institute_id || !name) {
       return res.status(400).json({ error: 'institute_id and name are required' });
@@ -19,10 +19,10 @@ async function create(req, res, next) {
     }
 
     const result = await db.query(
-      `INSERT INTO batches (institute_id, name, description, start_date, end_date)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO batches (institute_id, name, description, start_date, end_date, meet_link)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [institute_id, name, description || null, start_date || null, end_date || null]
+      [institute_id, name, description || null, start_date || null, end_date || null, meet_link || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -57,7 +57,7 @@ async function list(req, res, next) {
 async function update(req, res, next) {
   try {
     const { id } = req.params;
-    const { name, description, start_date, end_date, is_active } = req.body;
+    const { name, description, start_date, end_date, is_active, meet_link } = req.body;
 
     const batch = await db.query(
       `SELECT b.id FROM batches b
@@ -76,10 +76,11 @@ async function update(req, res, next) {
            start_date = COALESCE($3, start_date),
            end_date = COALESCE($4, end_date),
            is_active = COALESCE($5, is_active),
+           meet_link = COALESCE($6, meet_link),
            updated_at = now()
-       WHERE id = $6
+       WHERE id = $7
        RETURNING *`,
-      [name, description, start_date, end_date, is_active, id]
+      [name, description, start_date, end_date, is_active, meet_link, id]
     );
 
     res.json(result.rows[0]);

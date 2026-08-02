@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { GET, POST, toast } from '../../utils/api';
 import { FileTextIcon } from '../../components/common/Icons';
@@ -9,29 +9,28 @@ export function Tests() {
   const { institute } = useAuth();
   const [items, setItems] = useState([]);
   const [batches, setBatches] = useState([]);
-  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [showCreate, setShowCreate] = useState(false);
   
-  // Update initial form state to include new fields
   const [form, setForm] = useState({ 
     title: '', subject: '', batch_id: '', duration_min: 30, 
-    course_id: '', chapter: '', difficulty: '', number_of_questions: 0,
-    start_date: '', end_date: '', attempt_limit: 1
+    chapter: '', difficulty: 'medium', start_date: '', end_date: '', attempt_limit: 1
   });
   
-  const [selectedQs, setSelectedQs] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [selectionMode, setSelectionMode] = useState('manual'); // 'manual' or 'auto'
+  
+  // Importer state
+  const [inputType, setInputType] = useState('pdf'); // 'pdf' or 'text'
+  const [rawText, setRawText] = useState('');
+  const fileInputRef = useRef(null);
 
   const load = () => {
     if (!institute) return;
     Promise.all([
       GET(`/tests/institute/${institute.id}`),
-      GET(`/batches/${institute.id}`),
-      GET(`/questions/${institute.id}`)
-    ]).then(([t, b, q]) => { setItems(t); setBatches(b); setQuestions(q); })
+      GET(`/batches/${institute.id}`)
+    ]).then(([t, b]) => { setItems(t); setBatches(b); })
       .catch(() => {})
       .finally(() => setLoading(false));
   };
@@ -39,40 +38,63 @@ export function Tests() {
 
   const setF = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
-  const toggleQ = (qId) => {
-    setSelectedQs(prev => prev.includes(qId) ? prev.filter(id => id !== qId) : [...prev, qId]);
-  };
-
   const createTest = async () => {
     if (!form.title || !form.batch_id) {
       toast('Title and batch are required'); return;
     }
-    if (selectionMode === 'manual' && selectedQs.length === 0) {
-      toast('At least 1 question must be selected'); return;
-    }
-    if (selectionMode === 'auto' && (!form.number_of_questions || form.number_of_questions <= 0)) {
-      toast('Number of questions must be greater than 0'); return;
-    }
-
+    
     setSaving(true);
+    let parsedQuestions = [];
+
     try {
+      if (inputType === 'pdf') {
+        const file = fileInputRef.current?.files[0];
+        if (!file) {
+          toast('Please select a PDF file');
+          setSaving(false);
+          return;
+        }
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/questions/upload-pdf`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('av2_token')}`
+          },
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'PDF Upload failed');
+        parsedQuestions = data.questions;
+      } else {
+        if (!rawText.trim()) {
+          toast('Please paste text to extract questions');
+          setSaving(false);
+          return;
+        }
+        const data = await POST('/questions/extract-text', { text: rawText });
+        parsedQuestions = data.questions;
+      }
+
+      if (parsedQuestions.length === 0) {
+        toast('No questions could be extracted. Please check the format.');
+        setSaving(false);
+        return;
+      }
+
       const payload = { 
         ...form, 
         institute_id: institute.id, 
         start_date: form.start_date ? new Date(form.start_date).toISOString() : null,
         end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
+        raw_questions: parsedQuestions
       };
 
-      if (selectionMode === 'manual') {
-        payload.question_ids = selectedQs;
-        payload.number_of_questions = null;
-      } else {
-        payload.question_ids = [];
-        // number_of_questions is already in payload
-      }
-
-      await POST('/tests', payload, 'Test created');
-      setShowCreate(false); load();
+      await POST('/tests', payload, `Test created with ${parsedQuestions.length} questions`);
+      setShowCreate(false); 
+      load();
     } catch (err) {
       toast(err.message || 'Failed to create test');
     }
@@ -96,8 +118,11 @@ export function Tests() {
       <div className="page-header page-header-row">
         <div><h1 className="h1">Tests & Assessments</h1><p className="page-subtitle">Create and manage online tests</p></div>
         <button className="btn bp" onClick={() => { 
-          setForm({ title: '', subject: '', batch_id: '', duration_min: 30, course_id: '', chapter: '', difficulty: '', number_of_questions: 10, start_date: '', end_date: '', attempt_limit: 1 }); 
-          setSelectedQs([]); setSelectionMode('manual'); setShowCreate(true); 
+          setForm({ title: '', subject: '', batch_id: '', duration_min: 30, chapter: '', difficulty: 'medium', start_date: '', end_date: '', attempt_limit: 1 }); 
+          setRawText('');
+          setInputType('pdf');
+          if (fileInputRef.current) fileInputRef.current.value = null;
+          setShowCreate(true); 
         }}>+ Create Test</button>
       </div>
 
@@ -106,7 +131,7 @@ export function Tests() {
           {loading ? (
             <div style={{ padding: 20 }}><SkeletonTable /></div>
           ) : items.length === 0 ? (
-            <EmptyState icon={FileTextIcon} title="No Tests Yet" description="Create a test using questions from your Question Bank." actionLabel="+ Create Test" onAction={() => setShowCreate(true)} />
+            <EmptyState icon={FileTextIcon} title="No Tests Yet" description="Create a test using PDF upload or pasting text." actionLabel="+ Create Test" onAction={() => setShowCreate(true)} />
           ) : (
             <table className="tbl">
               <thead>
@@ -161,83 +186,86 @@ export function Tests() {
               <button className="btn-icon" onClick={() => setShowCreate(false)}>✕</button>
             </div>
             
-            <div className="fx fw" style={{ gap: 16, marginBottom: 12, flexShrink: 0 }}>
-              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Test Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Physics Mock Test 1" /></div>
-              <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Assign Batch *</label>
-                <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                  <option value="">Select Batch</option>
-                  {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Duration (mins)</label><input className="inp" type="number" value={form.duration_min} onChange={setF('duration_min')} /></div>
-            </div>
-
-            <div className="fx fw" style={{ gap: 16, marginBottom: 20, flexShrink: 0 }}>
-              <div className="field" style={{ flex: 1 }}><label>Subject</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="Filter by subject" /></div>
-              <div className="field" style={{ flex: 1 }}><label>Chapter</label><input className="inp" value={form.chapter} onChange={setF('chapter')} placeholder="Filter by chapter" /></div>
-              <div className="field" style={{ flex: 1 }}><label>Difficulty</label>
-                <select className="sel w-full" value={form.difficulty} onChange={setF('difficulty')}>
-                  <option value="">Any</option>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
-              <div className="field" style={{ flex: 1 }}><label>Attempt Limit</label><input className="inp" type="number" min="1" value={form.attempt_limit} onChange={setF('attempt_limit')} /></div>
-            </div>
-
-            <div className="fx fw" style={{ gap: 16, marginBottom: 20, flexShrink: 0 }}>
-              <div className="field" style={{ flex: 1 }}><label>Start Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.start_date} onChange={setF('start_date')} /></div>
-              <div className="field" style={{ flex: 1 }}><label>End Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.end_date} onChange={setF('end_date')} /></div>
-            </div>
-
-            <div style={{ flexShrink: 0, marginBottom: 12 }}>
-              <label style={{ marginRight: 16, fontWeight: 600 }}>Question Selection Mode:</label>
-              <label style={{ marginRight: 16 }}><input type="radio" checked={selectionMode === 'manual'} onChange={() => setSelectionMode('manual')} /> Manual Select</label>
-              <label><input type="radio" checked={selectionMode === 'auto'} onChange={() => setSelectionMode('auto')} /> Auto Random Pick</label>
-            </div>
-
-            {selectionMode === 'auto' ? (
-              <div className="field" style={{ marginBottom: 20 }}>
-                <label>Number of Questions to Pick</label>
-                <input className="inp" type="number" min="1" value={form.number_of_questions} onChange={setF('number_of_questions')} />
-                <div className="field-hint">The system will randomly select this many questions from the Question Bank matching the Subject, Chapter, and Difficulty filters above.</div>
-              </div>
-            ) : (
-              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid var(--border-color)', borderRadius: 8 }}>
-                <div className="fxb" style={{ padding: '12px 16px', background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
-                  <h3 className="h3">Select Questions from Bank ({selectedQs.length} selected)</h3>
+            <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8 }}>
+              <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
+                <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Test Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Physics Mock Test 1" /></div>
+                <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Assign Batch *</label>
+                  <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+                    <option value="">Select Batch</option>
+                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-                  {questions.length === 0 ? (
-                    <EmptyState title="Question Bank Empty" description="Add questions to the Question Bank first before creating a test." />
-                  ) : (
-                    <div className="g2">
-                      {questions
-                        .filter(q => (!form.subject || q.subject.toLowerCase().includes(form.subject.toLowerCase())) && 
-                                     (!form.chapter || (q.chapter && q.chapter.toLowerCase().includes(form.chapter.toLowerCase()))) &&
-                                     (!form.difficulty || q.difficulty === form.difficulty))
-                        .map(q => (
-                        <div key={q.id} className="card fx" style={{ padding: 12, gap: 12, cursor: 'pointer', border: selectedQs.includes(q.id) ? '2px solid var(--color-primary)' : '1px solid var(--border-color)' }} onClick={() => toggleQ(q.id)}>
-                          <input type="checkbox" checked={selectedQs.includes(q.id)} readOnly style={{ marginTop: 4 }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{q.text}</div>
-                            <div className="fxb muted" style={{ fontSize: 11 }}>
-                              <span>{q.subject} {q.chapter ? `• ${q.chapter}` : ''}</span>
-                              <span>{q.marks}M • {q.difficulty}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Duration (mins)</label><input className="inp" type="number" value={form.duration_min} onChange={setF('duration_min')} /></div>
+              </div>
+
+              <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
+                <div className="field" style={{ flex: 1 }}><label>Subject</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
+                <div className="field" style={{ flex: 1 }}><label>Chapter</label><input className="inp" value={form.chapter} onChange={setF('chapter')} placeholder="e.g. Mechanics" /></div>
+                <div className="field" style={{ flex: 1 }}><label>Difficulty</label>
+                  <select className="sel w-full" value={form.difficulty} onChange={setF('difficulty')}>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div className="field" style={{ flex: 1 }}><label>Attempt Limit</label><input className="inp" type="number" min="1" value={form.attempt_limit} onChange={setF('attempt_limit')} /></div>
+              </div>
+
+              <div className="fx fw" style={{ gap: 16, marginBottom: 24 }}>
+                <div className="field" style={{ flex: 1 }}><label>Start Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.start_date} onChange={setF('start_date')} /></div>
+                <div className="field" style={{ flex: 1 }}><label>End Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.end_date} onChange={setF('end_date')} /></div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <h3 className="h3" style={{ marginBottom: 8 }}>Questions Source</h3>
+                <div className="fx" style={{ gap: 16 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input type="radio" checked={inputType === 'pdf'} onChange={() => setInputType('pdf')} />
+                    Upload PDF Document
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input type="radio" checked={inputType === 'text'} onChange={() => setInputType('text')} />
+                    Paste Raw Text
+                  </label>
                 </div>
               </div>
-            )}
+
+              {inputType === 'pdf' ? (
+                <div className="card" style={{ borderStyle: 'dashed', textAlign: 'center', padding: 40 }}>
+                  <FileTextIcon size={48} color="var(--text-tertiary)" style={{ marginBottom: 16 }} />
+                  <h3 className="h3" style={{ marginBottom: 8 }}>Upload Test Document</h3>
+                  <p className="muted" style={{ marginBottom: 24, fontSize: 14 }}>Upload a PDF containing questions formatted like:<br/>"1. Question text?<br/>A) Option 1<br/>B) Option 2<br/>Ans: A"</p>
+                  <input 
+                    type="file" 
+                    accept=".pdf" 
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    id="pdf-upload"
+                  />
+                  <label htmlFor="pdf-upload" className="btn bs" style={{ display: 'inline-flex', cursor: 'pointer' }}>Select PDF File</label>
+                  <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {fileInputRef.current?.files?.[0]?.name}
+                  </div>
+                </div>
+              ) : (
+                <div className="field" style={{ height: 200, display: 'flex', flexDirection: 'column' }}>
+                  <label>Paste Text Content</label>
+                  <textarea 
+                    className="inp" 
+                    style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, resize: 'none' }} 
+                    placeholder={"1. What is the capital of France?\nA) London\nB) Paris\nC) Berlin\nD) Madrid\nAns: B"}
+                    value={rawText}
+                    onChange={e => setRawText(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="modal-footer" style={{ flexShrink: 0, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
               <button className="btn bd" onClick={() => setShowCreate(false)}>Cancel</button>
-              <button className="btn bp" onClick={createTest} disabled={saving}>{saving ? 'Creating...' : 'Create Test'}</button>
+              <button className="btn bp" onClick={createTest} disabled={saving}>
+                {saving ? 'Processing...' : 'Save & Launch Test'}
+              </button>
             </div>
           </div>
         </div>
