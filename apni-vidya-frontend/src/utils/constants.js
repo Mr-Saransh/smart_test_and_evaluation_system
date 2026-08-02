@@ -62,6 +62,7 @@ export const NAV_ITEMS = {
     { id: 'announcements', label: 'Announcements', path: '/admin/announcements', icon: MegaphoneIcon },
     { id: 'notifications', label: 'Notifications', path: '/admin/notifications', icon: BellIcon },
     { id: 'reports', label: 'Reports', path: '/admin/reports', icon: TrendingUpIcon },
+    { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
     { id: 'settings', label: 'Settings', path: '/admin/settings', icon: SettingsIcon },
   ],
 
@@ -75,6 +76,7 @@ export const NAV_ITEMS = {
     { id: 'planner', label: 'Planner', path: '/teacher/planner', icon: ClockIcon },
     { id: 'students', label: 'Students', path: '/teacher/students', icon: UsersIcon },
     { id: 'announcements', label: 'Announcements', path: '/teacher/announcements', icon: MegaphoneIcon },
+    { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
     { id: 'profile', label: 'Profile', path: '/teacher/profile', icon: SettingsIcon },
   ],
 
@@ -88,6 +90,7 @@ export const NAV_ITEMS = {
     { id: 'attendance', label: 'Attendance', path: '/student/attendance', icon: ClipboardIcon },
     { id: 'fees', label: 'Fee Status', path: '/student/fees', icon: CurrencyIcon },
     { id: 'announcements', label: 'Announcements', path: '/student/announcements', icon: MegaphoneIcon },
+    { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
     { id: 'profile', label: 'Profile', path: '/student/profile', icon: SettingsIcon },
   ],
 
@@ -98,6 +101,7 @@ export const NAV_ITEMS = {
     { id: 'fees', label: 'Fee Status', path: '/parent/fees', icon: CurrencyIcon },
     { id: 'timetable', label: 'Timetable', path: '/parent/timetable', icon: CalendarIcon },
     { id: 'announcements', label: 'Announcements', path: '/parent/announcements', icon: MegaphoneIcon },
+    { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
     { id: 'profile', label: 'Profile', path: '/parent/profile', icon: SettingsIcon },
   ],
 };

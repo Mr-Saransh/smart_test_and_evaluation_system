@@ -81,6 +81,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/parent-reports', parentReportRoutes);
 app.use('/api/superadmin', require('./routes/superadmin'));
+app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

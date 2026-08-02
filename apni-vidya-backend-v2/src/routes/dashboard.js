@@ -8,5 +8,6 @@ router.get('/parent', authenticate, authorize('parent'), dashboard.parentDashboa
 router.get('/report/student/:student_id', authenticate, authorize('institute_admin', 'teacher'), dashboard.studentReport);
 router.get('/report/batch/:batch_id', authenticate, authorize('institute_admin', 'teacher'), dashboard.batchReport);
 router.post('/portfolio/:student_id/enable', authenticate, dashboard.enablePortfolio);
+router.get('/report/weekly/:institute_id', authenticate, authorize('institute_admin', 'teacher'), dashboard.weeklyReport);
 
 module.exports = router;

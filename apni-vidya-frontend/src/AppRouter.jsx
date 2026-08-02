@@ -47,6 +47,8 @@ const ParentPortal = lazy(() => import('./pages/student/StudentPortal').then(m =
 const SuperAdminOverview = lazy(() => import('./pages/superadmin/Overview').then(m => ({ default: m.Overview })));
 const SuperAdminInstitutes = lazy(() => import('./pages/superadmin/Institutes').then(m => ({ default: m.Institutes })));
 const TestPlayer = lazy(() => import('./pages/student/TestPlayer').then(m => ({ default: m.TestPlayer })));
+const DetailedReport = lazy(() => import('./pages/shared/DetailedReport').then(m => ({ default: m.DetailedReport })));
+const Leaderboard = lazy(() => import('./pages/shared/Leaderboard').then(m => ({ default: m.Leaderboard })));
 
 // Super Admin Fallback for non-existent routes
 const ComingSoon = ({ title }) => (
@@ -77,6 +79,10 @@ export function AppRouter() {
       
       {/* Test Player (Full screen, no sidebar) */}
       <Route path="/play-test/:test_id" element={<ProtectedRoute allowedRoles={['student']}><Suspense fallback={<LoadingFallback />}><TestPlayer /></Suspense></ProtectedRoute>} />
+      
+      {/* Detailed Evaluation Report */}
+      <Route path="/report/:test_id" element={<ProtectedRoute allowedRoles={['student', 'institute_admin', 'teacher', 'parent']}><Suspense fallback={<LoadingFallback />}><DetailedReport /></Suspense></ProtectedRoute>} />
+      <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['student', 'institute_admin', 'teacher', 'parent']}><Suspense fallback={<LoadingFallback />}><Leaderboard /></Suspense></ProtectedRoute>} />
 
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['institute_admin']}><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Suspense fallback={<LoadingFallback />}><AdminOverview /></Suspense>} />

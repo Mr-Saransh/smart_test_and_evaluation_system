@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { GET, POST, toast } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import { ClockIcon, CheckCircleIcon } from '../../components/common/Icons';
 
 export function TestPlayer() {
@@ -9,25 +10,68 @@ export function TestPlayer() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  const [answers, setAnswers] = useState({}); // { question_id: index }
+  const [answers, setAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [startTime, setStartTime] = useState(0);
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
 
   useEffect(() => {
+    if (!user) return;
+    const sessionKey = `test_session_${test_id}_${user.id}`;
+    
     GET(`/tests/student/${test_id}`)
       .then(res => {
         setData(res);
-        setTimeRemaining(res.test.duration_min * 60);
-        setStartTime(Date.now());
+        const durationSec = res.test.duration_min * 60;
+        
+        // Restore session if exists
+        try {
+          const cached = localStorage.getItem(sessionKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
+            if (elapsed < durationSec && !parsed.submitted) {
+              setStartTime(parsed.startTime);
+              setTimeRemaining(durationSec - elapsed);
+              if (parsed.answers) setAnswers(parsed.answers);
+              setLoading(false);
+              return;
+            } else {
+              // Expired or submitted session
+              localStorage.removeItem(sessionKey);
+            }
+          }
+        } catch(e) {}
+        
+        // Start fresh
+        const now = Date.now();
+        setStartTime(now);
+        setTimeRemaining(durationSec);
+        localStorage.setItem(sessionKey, JSON.stringify({
+          startTime: now,
+          answers: {},
+          submitted: false
+        }));
       })
       .catch(err => {
         toast(err.message || 'Error loading test');
         navigate('/student/tests');
       })
       .finally(() => setLoading(false));
-  }, [test_id, navigate]);
+  }, [test_id, navigate, user]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!submitted && data) {
+        e.preventDefault();
+        e.returnValue = 'Are you sure you want to leave? Your exam is still running.';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [submitted, data]);
 
   useEffect(() => {
     if (loading || submitted || timeRemaining <= 0) return;
@@ -46,7 +90,18 @@ export function TestPlayer() {
 
   const handleOptionSelect = (qId, optionIndex) => {
     if (submitted) return;
-    setAnswers(prev => ({ ...prev, [qId]: optionIndex }));
+    setAnswers(prev => {
+      const newAns = { ...prev, [qId]: optionIndex };
+      if (user) {
+        const sessionKey = `test_session_${test_id}_${user.id}`;
+        try {
+          const cached = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+          cached.answers = newAns;
+          localStorage.setItem(sessionKey, JSON.stringify(cached));
+        } catch(e) {}
+      }
+      return newAns;
+    });
   };
 
   const handleSubmit = async () => {
@@ -58,6 +113,9 @@ export function TestPlayer() {
       setSubmitted(true);
       setResult(res);
       toast('Test submitted successfully');
+      if (user) {
+        localStorage.removeItem(`test_session_${test_id}_${user.id}`);
+      }
     } catch (err) {
       toast(err.message || 'Error submitting test');
     }

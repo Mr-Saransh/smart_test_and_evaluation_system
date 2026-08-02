@@ -112,13 +112,34 @@ async function login(req, res, next) {
 async function me(req, res, next) {
   try {
     const result = await db.query(
-      'SELECT id, phone, email, role, full_name, created_at FROM users WHERE id = $1',
+      'SELECT id, phone, email, role, full_name, created_at, must_reset_password FROM users WHERE id = $1',
       [req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(result.rows[0]);
+    
+    const user = result.rows[0];
+    if (user.role === 'student') {
+      const s = await db.query('SELECT institute_id, batch_id FROM students WHERE user_id = $1', [user.id]);
+      if (s.rows.length > 0) {
+        user.institute_id = s.rows[0].institute_id;
+        user.batch_id = s.rows[0].batch_id;
+      }
+    } else if (user.role === 'teacher') {
+      const t = await db.query('SELECT institute_id FROM teachers WHERE user_id = $1', [user.id]);
+      if (t.rows.length > 0) {
+        user.institute_id = t.rows[0].institute_id;
+      }
+    } else if (user.role === 'parent') {
+      // Just in case parent needs institute_id too (from their first linked student)
+      const p = await db.query('SELECT institute_id FROM students WHERE parent_user_id = $1 LIMIT 1', [user.id]);
+      if (p.rows.length > 0) {
+        user.institute_id = p.rows[0].institute_id;
+      }
+    }
+    
+    res.json(user);
   } catch (err) {
     next(err);
   }

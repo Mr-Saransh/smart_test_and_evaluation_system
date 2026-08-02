@@ -68,20 +68,23 @@ export function Overview() {
   return (
     <div className="animate-fade-in">
       {/* Welcome Banner */}
-      <div className="card card-dark" style={{ marginBottom: 24 }}>
-        <div className="fxb" style={{ flexWrap: 'wrap', gap: 16 }}>
+      <div className="card glass" style={{ marginBottom: 24, padding: '32px 28px', background: 'var(--gradient-primary)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(40px)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-50%', right: '-10%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(40px)' }}></div>
+        
+        <div className="fxb" style={{ flexWrap: 'wrap', gap: 16, position: 'relative', zIndex: 1 }}>
           <div>
-            <h1 className="h1" style={{ color: '#fff', fontSize: 24, marginBottom: 4 }}>
+            <h1 className="h1" style={{ color: '#fff', fontSize: 28, marginBottom: 6, fontWeight: 800 }}>
               {getGreeting()}, {user?.full_name}
             </h1>
-            <p className="muted">{institute.name} • Institute Dashboard</p>
+            <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 15, fontWeight: 500 }}>{institute.name} • Institute Dashboard</p>
           </div>
-          <div className="fx" style={{ gap: 10 }}>
-            <button className="btn bp" onClick={() => navigate('/admin/attendance')}>
-              <ClipboardIcon size={16} color="#fff" /> Mark Attendance
+          <div className="fx" style={{ gap: 12 }}>
+            <button className="btn" style={{ background: '#fff', color: 'var(--color-primary)', fontWeight: 700 }} onClick={() => navigate('/admin/attendance')}>
+              <ClipboardIcon size={18} color="var(--color-primary)" /> Mark Attendance
             </button>
-            <button className="btn" style={{ background: '#1e293b', color: '#f8fafc', borderColor: '#334155', border: '1px solid #334155' }} onClick={() => navigate('/admin/tests')}>
-              <FileTextIcon size={16} color="#94a3b8" /> Create Test
+            <button className="btn glass hover-glow" style={{ color: '#fff', borderColor: 'rgba(255, 255, 255, 0.4)' }} onClick={() => navigate('/admin/tests')}>
+              <FileTextIcon size={18} color="#fff" /> Create Test
             </button>
           </div>
         </div>
@@ -90,7 +93,7 @@ export function Overview() {
       {/* Stat Cards */}
       <div className="g4 animate-stagger" style={{ marginBottom: 24 }}>
         {stats.map(s => (
-          <div key={s.label} className="sc" onClick={() => navigate(s.path)} style={{ cursor: 'pointer' }}>
+          <div key={s.label} className="sc hover-lift" onClick={() => navigate(s.path)} style={{ cursor: 'pointer' }}>
             <div className="fxb">
               <div>
                 <div className="muted" style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{s.label}</div>

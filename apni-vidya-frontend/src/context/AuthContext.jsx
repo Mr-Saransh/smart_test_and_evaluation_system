@@ -14,12 +14,10 @@ export function AuthProvider({ children }) {
       GET('/auth/me')
         .then(async (u) => {
           setUser(u);
-          if (u.role === 'institute_admin' || u.role === 'teacher') {
-            try {
-              const inst = await GET('/institutes/mine');
-              setInstitute(inst);
-            } catch { /* institute not yet created */ }
-          }
+          try {
+            const inst = await GET('/institutes/mine');
+            setInstitute(inst);
+          } catch { /* institute not yet created */ }
           setLoading(false);
         })
         .catch(() => {

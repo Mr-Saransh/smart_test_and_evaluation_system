@@ -8,7 +8,7 @@ router.get('/enroll/:slug', institute.getBySlug);
 
 // Protected: institute admin routes
 router.post('/', authenticate, authorize('institute_admin'), institute.create);
-router.get('/mine', authenticate, authorize('institute_admin'), institute.getMyInstitute);
+router.get('/mine', authenticate, authorize('institute_admin', 'teacher', 'student', 'parent'), institute.getMyInstitute);
 router.put('/:id', authenticate, authorize('institute_admin'), institute.update);
 router.post('/:id/regenerate-qr', authenticate, authorize('institute_admin'), institute.regenerateQR);
 

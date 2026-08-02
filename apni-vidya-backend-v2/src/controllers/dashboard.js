@@ -196,8 +196,64 @@ async function publicPortfolio(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function weeklyReport(req, res, next) {
+  try {
+    const { institute_id } = req.params;
+    const { hasInstituteAccess } = require('../utils/access');
+    
+    if (!(await hasInstituteAccess(req.user, institute_id))) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const days = [];
+    for(let i=6; i>=0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().split('T')[0]);
+    }
+
+    const tests = await db.query(
+      `SELECT DATE(ts.submitted_at) as day, COUNT(ts.id) as submissions, AVG(100.0 * ts.score / NULLIF(ts.max_marks,0)) as avg_score
+       FROM test_submissions ts
+       JOIN tests t ON ts.test_id = t.id
+       WHERE t.institute_id = $1 AND ts.submitted_at >= NOW() - INTERVAL '7 days'
+       GROUP BY DATE(ts.submitted_at)`, [institute_id]
+    );
+
+    const attend = await db.query(
+      `SELECT date, 
+              COUNT(*) FILTER (WHERE status IN ('present', 'late')) * 100.0 / NULLIF(COUNT(*), 0) as attendance_pct
+       FROM attendance 
+       WHERE institute_id = $1 AND date >= NOW() - INTERVAL '7 days'
+       GROUP BY date`, [institute_id]
+    );
+
+    const testMap = tests.rows.reduce((acc, r) => {
+      // Handle Date object conversion correctly
+      const dateStr = typeof r.day === 'string' ? r.day.split('T')[0] : r.day.toISOString().split('T')[0];
+      acc[dateStr] = r;
+      return acc;
+    }, {});
+    
+    const attendMap = attend.rows.reduce((acc, r) => {
+      const dateStr = typeof r.date === 'string' ? r.date.split('T')[0] : r.date.toISOString().split('T')[0];
+      acc[dateStr] = r;
+      return acc;
+    }, {});
+
+    const trend = days.map(day => ({
+      day,
+      avg_score: testMap[day] ? Math.round(Number(testMap[day].avg_score)) : null,
+      submissions: testMap[day] ? Number(testMap[day].submissions) : 0,
+      attendance_pct: attendMap[day] ? Math.round(Number(attendMap[day].attendance_pct)) : null
+    }));
+
+    res.json({ trend });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
-  studentDashboard, parentDashboard, studentReport, batchReport, enablePortfolio, publicPortfolio,
+  studentDashboard, parentDashboard, studentReport, batchReport, enablePortfolio, publicPortfolio, weeklyReport,
   // Exposed so the scheduled-report dispatcher can reuse the same compiler the
   // dashboards use; keeps the "auto-compiled from attendance + test data"
   // contract in one place.

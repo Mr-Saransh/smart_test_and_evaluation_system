@@ -453,4 +453,70 @@ async function attempts(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, list, listForStudent, getForStudent, submit, results, analysis, gradeSubjective, attempts };
+async function resultDetail(req, res, next) {
+  try {
+    const { test_id } = req.params;
+    let studentId;
+    if (req.user.role === 'student') {
+      const student = await getStudentForUser(req.user.id);
+      if (!student) return res.status(403).json({ error: 'Student not found' });
+      studentId = student.id;
+    } else {
+      studentId = req.query.student_id;
+    }
+
+    if (!studentId) return res.status(400).json({ error: 'student_id required' });
+
+    const subQuery = await db.query(
+      `SELECT * FROM test_submissions WHERE test_id = $1 AND student_id = $2 ORDER BY attempt_number DESC LIMIT 1`,
+      [test_id, studentId]
+    );
+    if (subQuery.rows.length === 0) return res.status(404).json({ error: 'Submission not found' });
+    const sub = subQuery.rows[0];
+
+    const qQuery = await db.query(
+      `SELECT q.id, q.subject, q.chapter, q.difficulty, q.correct_index, q.marks, q.negative_marks, q.type, q.text, q.options, tq.position
+       FROM test_questions tq JOIN questions q ON tq.question_id = q.id
+       WHERE tq.test_id = $1 ORDER BY tq.position`,
+      [test_id]
+    );
+
+    let correct = 0, wrong = 0, skipped = 0;
+    const questions = qQuery.rows.map(q => {
+      const ans = sub.answers ? sub.answers[q.id] : null;
+      let status = 'skipped';
+      if (ans !== null && ans !== undefined) {
+        if (ans === q.correct_index) { status = 'correct'; correct++; }
+        else { status = 'wrong'; wrong++; }
+      } else {
+        skipped++;
+      }
+      return { ...q, student_answer: ans, status };
+    });
+
+    const accuracy = correct + wrong > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0;
+    const avgTime = sub.time_taken_min ? Math.round((sub.time_taken_min * 60) / questions.length) : 0;
+
+    const breakdown = {};
+    questions.forEach(q => {
+      const key = q.subject || 'General';
+      if (!breakdown[key]) breakdown[key] = { correct: 0, total: 0 };
+      breakdown[key].total++;
+      if (q.status === 'correct') breakdown[key].correct++;
+    });
+
+    res.json({
+      submission: sub,
+      stats: {
+        total_questions: questions.length,
+        correct, wrong, skipped, accuracy,
+        time_taken_min: sub.time_taken_min || 0,
+        avg_time_sec: avgTime
+      },
+      breakdown,
+      questions
+    });
+  } catch(e) { next(e); }
+}
+
+module.exports = { create, list, listForStudent, getForStudent, submit, results, analysis, gradeSubjective, attempts, resultDetail };

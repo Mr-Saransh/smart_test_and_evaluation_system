@@ -43,8 +43,10 @@ async function realApi(path, opts = {}) {
   const r = await fetch(`${REAL_API}${path}`, fetchOpts);
 
   if (r.status === 401) {
-    triggerAuthExpired();
-    throw new Error('Session expired. Please sign in again.');
+    if (!path.includes('/auth/login') && !path.includes('/auth/change-password')) {
+      triggerAuthExpired();
+      throw new Error('Session expired. Please sign in again.');
+    }
   }
 
   const d = await r.json().catch(() => ({}));

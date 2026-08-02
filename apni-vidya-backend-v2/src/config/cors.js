@@ -25,9 +25,13 @@ function allowedOrigins() {
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) return callback(null, true);
-    if (origin === 'https://smart-test-and-evaluation-system.vercel.app') {
+    
+    const allowed = allowedOrigins();
+    // Allow vercel preview deployments and the specific prod URL
+    if (origin.endsWith('.vercel.app') || origin === 'https://smart-test-and-evaluation-system.vercel.app' || allowed.includes(origin)) {
       return callback(null, true);
     }
+    
     return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
