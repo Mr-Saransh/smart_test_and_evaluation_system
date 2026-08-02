@@ -35,6 +35,8 @@ export function Reports() {
 
   if (!data) return <EmptyState icon={TrendingUpIcon} title="No Data Available" description="There is not enough data to generate analytics yet." />;
 
+  return (
+    <div>
       <div className="tabs" style={{ marginBottom: 24 }}>
         <button className={`tab${tab === 'weekly' ? ' active' : ''}`} onClick={() => setTab('weekly')}>7-Day Trend</button>
       </div>
