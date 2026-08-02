@@ -225,6 +225,88 @@ export function StudentPortal() {
     );
   };
 
+  const renderPlanner = () => {
+    const planner = data.planner || [];
+    return planner.length === 0 ? <EmptyState icon={ClockIcon} title="No Planner Items" /> : (
+      <div className="g3">
+        {planner.map(p => (
+          <div key={p.id} className="card" style={{ borderLeft: '4px solid var(--color-primary)' }}>
+            <div className="fxb" style={{ marginBottom: 8 }}>
+              <h3 className="h3" style={{ marginBottom: 0 }}>{p.title}</h3>
+              <span className="badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{p.type}</span>
+            </div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <CalendarIcon size={14} /> {formatDate(p.date)}
+            </div>
+            {p.description && <p className="muted" style={{ fontSize: 13 }}>{p.description}</p>}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderAttendance = () => {
+    const attendance = data.portfolio?.attendance || {};
+    const pct = Number(attendance.attendance_pct) || 0;
+    
+    return (
+      <div className="card" style={{ maxWidth: 600 }}>
+        <h3 className="h2" style={{ marginBottom: 16 }}>Attendance Overview</h3>
+        <div className="fx" style={{ gap: 24, marginBottom: 24 }}>
+          <div className="sc">
+            <div className="muted" style={{ fontSize: 13, fontWeight: 600 }}>Overall Attendance</div>
+            <div className="sn" style={{ color: getAttendanceColor(pct) }}>{pct}%</div>
+          </div>
+          <div className="sc">
+            <div className="muted" style={{ fontSize: 13, fontWeight: 600 }}>Classes Attended</div>
+            <div className="sn">{attendance.present_days || 0} / {attendance.total_days || 0}</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderProgress = () => {
+    const performance = data.portfolio?.performance || {};
+    const swot = data.portfolio?.swot || {};
+    
+    return (
+      <div className="g2" style={{ alignItems: 'start' }}>
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <h3 className="h2" style={{ marginBottom: 16 }}>Test Performance</h3>
+          <div className="fx" style={{ gap: 24 }}>
+            <div className="sc">
+              <div className="muted" style={{ fontSize: 13, fontWeight: 600 }}>Average Score</div>
+              <div className="sn" style={{ color: getScoreColor(performance.average_pct) }}>{performance.average_pct || 0}%</div>
+            </div>
+            <div className="sc">
+              <div className="muted" style={{ fontSize: 13, fontWeight: 600 }}>Tests Taken</div>
+              <div className="sn">{performance.tests_taken || 0}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <h3 className="h3" style={{ marginBottom: 16, color: 'var(--color-success)' }}>Strengths</h3>
+          {swot.strengths?.length > 0 ? (
+            <ul style={{ paddingLeft: 20 }}>
+              {swot.strengths.map((s, i) => <li key={i} style={{ marginBottom: 8 }}>{s.topic} ({s.accuracy}%)</li>)}
+            </ul>
+          ) : <div className="muted">No data yet.</div>}
+        </div>
+        
+        <div className="card">
+          <h3 className="h3" style={{ marginBottom: 16, color: 'var(--color-error)' }}>Areas to Improve</h3>
+          {swot.weaknesses?.length > 0 ? (
+            <ul style={{ paddingLeft: 20 }}>
+              {swot.weaknesses.map((w, i) => <li key={i} style={{ marginBottom: 8 }}>{w.topic} ({w.accuracy}%)</li>)}
+            </ul>
+          ) : <div className="muted">No data yet.</div>}
+        </div>
+      </div>
+    );
+  };
+
   const views = {
     home: renderHome,
     timetable: renderTimetable,
@@ -232,11 +314,15 @@ export function StudentPortal() {
     materials: renderMaterials,
     fees: renderFees,
     announcements: renderAnnouncements,
+    planner: renderPlanner,
+    attendance: renderAttendance,
+    progress: renderProgress,
   };
 
   const viewNames = {
     home: 'Dashboard', timetable: 'Timetable', tests: 'Tests & Assessments', 
-    materials: 'Study Materials', fees: 'Fee Status', announcements: 'Announcements'
+    materials: 'Study Materials', fees: 'Fee Status', announcements: 'Announcements',
+    planner: 'Study Planner', attendance: 'Attendance Record', progress: 'My Progress'
   };
 
   return (

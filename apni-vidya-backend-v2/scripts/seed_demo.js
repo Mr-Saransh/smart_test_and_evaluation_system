@@ -59,9 +59,7 @@ async function seed() {
     console.log(' Creating Teachers...');
     const teacherData = [
       { name: 'Priya Verma', email: 'teacher@apnividya.demo', phone: '9876500002', subject: 'Physics' },
-      { name: 'Ramesh Kumar', email: 'ramesh.teacher@apnividya.demo', phone: '9876500021', subject: 'Chemistry' },
-      { name: 'Anjali Mehta', email: 'anjali.teacher@apnividya.demo', phone: '9876500022', subject: 'Mathematics' },
-      { name: 'Suresh Nair', email: 'suresh.teacher@apnividya.demo', phone: '9876500023', subject: 'Biology' }
+      { name: 'Ramesh Kumar', email: 'ramesh.teacher@apnividya.demo', phone: '9876500021', subject: 'Chemistry' }
     ];
 
     const teacherUserIds = [];
@@ -98,28 +96,10 @@ async function seed() {
     );
     const b1Id = b1Res.rows[0].id;
 
-    const b2Res = await client.query(
-      `INSERT INTO batches (institute_id, name, description)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [instId, 'Class 11 Science', 'Foundation & core concepts for Class XI']
-    );
-    const b2Id = b2Res.rows[0].id;
-
-    const b3Res = await client.query(
-      `INSERT INTO batches (institute_id, name, description)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [instId, 'Class 10 Foundation', 'Board excellence & Olympiad foundation']
-    );
-    const b3Id = b3Res.rows[0].id;
-
     // 5. Create Courses
     console.log(' Creating Courses...');
     const courses = [
-      { name: 'Class 12 Science', sub: 'Physics, Chemistry, Maths & Bio', fee: 85000, batch: b1Id },
-      { name: 'Class 11 Science', sub: 'Physics, Chemistry & Maths', fee: 75000, batch: b2Id },
-      { name: 'Class 10 Foundation', sub: 'Science & Mathematics', fee: 50000, batch: b3Id }
+      { name: 'Class 12 Science', sub: 'Physics, Chemistry, Maths & Bio', fee: 85000, batch: b1Id }
     ];
     for (const c of courses) {
       await client.query(
@@ -169,28 +149,9 @@ async function seed() {
     const aaravStudentId = aaravStudentRes.rows[0].id;
 
     // 8. Create Additional Demo Students
-    console.log(' Creating Demo Students (Riya Sharma, Aditya Singh, Neha Gupta, Rohan Patel)...');
+    console.log(' Creating Demo Students (Riya Sharma)...');
     const studentList = [
-      { name: 'Riya Sharma', phone: '9876500101', batch: b1Id, roll: '12S-002' },
-      { name: 'Aditya Singh', phone: '9876500102', batch: b1Id, roll: '12S-003' },
-      { name: 'Neha Gupta', phone: '9876500103', batch: b1Id, roll: '12S-004' },
-      { name: 'Rohan Patel', phone: '9876500104', batch: b1Id, roll: '12S-005' },
-      { name: 'Ananya Roy', phone: '9876500105', batch: b1Id, roll: '12S-006' },
-      { name: 'Ishita Sharma', phone: '9876500106', batch: b1Id, roll: '12S-007' },
-      { name: 'Kabir Verma', phone: '9876500107', batch: b1Id, roll: '12S-008' },
-      { name: 'Diya Kapoor', phone: '9876500108', batch: b1Id, roll: '12S-009' },
-      { name: 'Vihaan Joshi', phone: '9876500109', batch: b1Id, roll: '12S-010' },
-
-      // Class 11 Science
-      { name: 'Arjun Reddy', phone: '9876500201', batch: b2Id, roll: '11S-001' },
-      { name: 'Kavya Pillai', phone: '9876500202', batch: b2Id, roll: '11S-002' },
-      { name: 'Devansh Shah', phone: '9876500203', batch: b2Id, roll: '11S-003' },
-      { name: 'Meera Iyer', phone: '9876500204', batch: b2Id, roll: '11S-004' },
-
-      // Class 10 Foundation
-      { name: 'Ayaan Malik', phone: '9876500301', batch: b3Id, roll: '10F-001' },
-      { name: 'Bhavya Bansal', phone: '9876500302', batch: b3Id, roll: '10F-002' },
-      { name: 'Chaitanya Das', phone: '9876500303', batch: b3Id, roll: '10F-003' }
+      { name: 'Riya Sharma', phone: '9876500101', batch: b1Id, roll: '12S-002' }
     ];
 
     const allStudentIds = [{ id: aaravStudentId, batch_id: b1Id }];
@@ -213,10 +174,10 @@ async function seed() {
       allStudentIds.push({ id: stRes.rows[0].id, batch_id: s.batch });
     }
 
-    // 9. Generate 30 Days Attendance Records (Aarav ~88%)
-    console.log(' Generating 30 Days Attendance Records...');
+    // 9. Generate 5 Days Attendance Records (Aarav ~88%)
+    console.log(' Generating 5 Days Attendance Records...');
     const today = new Date();
-    for (let d = 0; d < 30; d++) {
+    for (let d = 0; d < 5; d++) {
       const dateObj = new Date(today);
       dateObj.setDate(today.getDate() - d);
       if (dateObj.getDay() === 0) continue; // skip Sundays
@@ -239,8 +200,7 @@ async function seed() {
     console.log(' Creating Questions & Test Results...');
     const questionsData = [
       { sub: 'Physics', topic: 'Mechanics', text: 'What is the SI unit of Force?', opts: ['Newton', 'Joule', 'Watt', 'Pascal'], corr: 0, marks: 50 },
-      { sub: 'Chemistry', topic: 'Organic Chemistry', text: 'Which functional group is present in Alcohols?', opts: ['-OH', '-COOH', '-CHO', '-NH2'], corr: 0, marks: 50 },
-      { sub: 'Mathematics', topic: 'Integration', text: 'What is the integral of 1/x dx?', opts: ['ln|x| + C', 'x^2 / 2', '-1/x^2', 'e^x'], corr: 0, marks: 50 }
+      { sub: 'Chemistry', topic: 'Organic Chemistry', text: 'Which functional group is present in Alcohols?', opts: ['-OH', '-COOH', '-CHO', '-NH2'], corr: 0, marks: 50 }
     ];
 
     const qIds = [];
