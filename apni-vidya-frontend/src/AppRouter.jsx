@@ -82,7 +82,9 @@ export function AppRouter() {
       
       {/* Detailed Evaluation Report */}
       <Route path="/report/:test_id" element={<ProtectedRoute allowedRoles={['student', 'institute_admin', 'teacher', 'parent']}><Suspense fallback={<LoadingFallback />}><DetailedReport /></Suspense></ProtectedRoute>} />
-      <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['student', 'institute_admin', 'teacher', 'parent']}><Suspense fallback={<LoadingFallback />}><Leaderboard /></Suspense></ProtectedRoute>} />
+      <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['student', 'institute_admin', 'teacher', 'parent']}><DashboardLayout /></ProtectedRoute>}>
+        <Route index element={<Suspense fallback={<LoadingFallback />}><Leaderboard /></Suspense>} />
+      </Route>
 
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['institute_admin']}><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Suspense fallback={<LoadingFallback />}><AdminOverview /></Suspense>} />

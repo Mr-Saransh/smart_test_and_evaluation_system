@@ -10,6 +10,7 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
   const [darkMode, setDarkMode] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
 
   const role = user?.role;
@@ -24,6 +25,12 @@ export function DashboardLayout() {
     document.documentElement.setAttribute('data-theme', next ? 'dark' : '');
   };
 
+  const toggleCollapse = () => {
+    const val = !isCollapsed;
+    setIsCollapsed(val);
+    localStorage.setItem('sidebar_collapsed', val);
+  };
+
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const isActive = (path) => {
@@ -34,7 +41,7 @@ export function DashboardLayout() {
   return (
     <div className="app-layout">
       {/* Sidebar */}
-      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+      <aside className={`sidebar${sidebarOpen ? ' open' : ''}${isCollapsed ? ' collapsed' : ''}`}>
         <div className="sidebar-header">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div className="sidebar-logo">
@@ -46,13 +53,28 @@ export function DashboardLayout() {
                 <div className="sidebar-logo-sub">{roleLabel}</div>
               </div>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4, display: sidebarOpen ? 'flex' : 'none' }}
-              aria-label="Close menu"
-            >
-              <CloseIcon size={20} color="#94a3b8" />
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {/* Desktop Collapse Toggle */}
+              <button
+                onClick={toggleCollapse}
+                className="btn-icon"
+                style={{ width: 28, height: 28, background: 'transparent', border: 'none', display: 'flex' }}
+                aria-label="Toggle sidebar"
+                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {isCollapsed ? <path d="M5 12h14M12 5l7 7-7 7" /> : <path d="M19 12H5M12 19l-7-7 7-7" />}
+                </svg>
+              </button>
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setSidebarOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4, display: sidebarOpen ? 'flex' : 'none' }}
+                aria-label="Close menu"
+              >
+                <CloseIcon size={20} color="#94a3b8" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -62,9 +84,10 @@ export function DashboardLayout() {
               key={item.id}
               className={`sb-item${isActive(item.path) ? ' active' : ''}`}
               onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+              title={item.label}
             >
               <item.icon size={18} />
-              <span>{item.label}</span>
+              <span className="nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
@@ -77,9 +100,9 @@ export function DashboardLayout() {
               <div className="sidebar-user-role">{roleLabel}</div>
             </div>
           </div>
-          <button className="btn bs bsm" style={{ width: '100%', justifyContent: 'center', background: '#1e293b', color: '#f8fafc', borderColor: '#334155' }} onClick={handleLogout}>
+          <button className="btn bs bsm" style={{ width: '100%', justifyContent: 'center', background: '#1e293b', color: '#f8fafc', borderColor: '#334155' }} onClick={handleLogout} title="Sign Out">
             <LogOutIcon size={14} color="#94a3b8" />
-            <span>Sign Out</span>
+            <span className="logout-text">Sign Out</span>
           </button>
         </div>
       </aside>
@@ -88,7 +111,7 @@ export function DashboardLayout() {
       <div className={`backdrop${sidebarOpen ? ' show' : ''}`} onClick={() => setSidebarOpen(false)} />
 
       {/* Main Content */}
-      <div className="main-content-area">
+      <div className={`main-content-area${isCollapsed ? ' collapsed' : ''}`}>
         {/* Desktop Top Nav */}
         <header className="topnav">
           <div className="topnav-left">
