@@ -77,7 +77,7 @@ export const NAV_ITEMS = {
     { id: 'students', label: 'Students', path: '/teacher/students', icon: UsersIcon },
     { id: 'announcements', label: 'Announcements', path: '/teacher/announcements', icon: MegaphoneIcon },
     { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
-    { id: 'profile', label: 'Profile', path: '/teacher/profile', icon: SettingsIcon },
+    { id: 'settings', label: 'Settings', path: '/teacher/settings', icon: SettingsIcon },
   ],
 
   [ROLES.STUDENT]: [
@@ -91,7 +91,7 @@ export const NAV_ITEMS = {
     { id: 'fees', label: 'Fee Status', path: '/student/fees', icon: CurrencyIcon },
     { id: 'announcements', label: 'Announcements', path: '/student/announcements', icon: MegaphoneIcon },
     { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
-    { id: 'profile', label: 'Profile', path: '/student/profile', icon: SettingsIcon },
+    { id: 'settings', label: 'Settings', path: '/student/settings', icon: SettingsIcon },
   ],
 
   [ROLES.PARENT]: [
@@ -102,7 +102,7 @@ export const NAV_ITEMS = {
     { id: 'timetable', label: 'Timetable', path: '/parent/timetable', icon: CalendarIcon },
     { id: 'announcements', label: 'Announcements', path: '/parent/announcements', icon: MegaphoneIcon },
     { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
-    { id: 'profile', label: 'Profile', path: '/parent/profile', icon: SettingsIcon },
+    { id: 'settings', label: 'Settings', path: '/parent/settings', icon: SettingsIcon },
   ],
 };
 
