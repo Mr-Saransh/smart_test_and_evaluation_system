@@ -32,6 +32,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const publicRoutes = require('./routes/public');
 const materialRoutes = require('./routes/material');
 const parentReportRoutes = require('./routes/parentReport');
+const studentRoutes = require('./routes/student');
 
 const app = express();
 
@@ -80,6 +81,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/parent-reports', parentReportRoutes);
+app.use('/api/students', studentRoutes);
 app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 

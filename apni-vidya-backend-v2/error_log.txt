@@ -1,0 +1,5 @@
+2026-08-07T06:59:27.107Z\nError: read ECONNRESET
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async hasInstituteAccess (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\utils\access.js:7:15)
+    at async list (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\course.js:25:11)\n\n

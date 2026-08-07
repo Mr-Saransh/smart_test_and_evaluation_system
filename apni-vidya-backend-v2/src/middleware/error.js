@@ -32,7 +32,9 @@ function errorHandler(err, req, res, next) {
 
   // Log server errors with context; client (4xx) errors are expected, log lean.
   if (status >= 500) {
-    console.error(`[error] ${req.method} ${req.originalUrl} ->`, err.stack || err.message);
+    const logStr = `[error] ${req.method} ${req.originalUrl} -> ${err.stack || err.message}\\n`;
+    console.error(logStr);
+    require('fs').appendFileSync('global_error_log.txt', new Date().toISOString() + ' ' + logStr);
   }
 
   const message = status >= 500 && isProduction()

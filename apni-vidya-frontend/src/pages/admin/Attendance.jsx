@@ -30,16 +30,17 @@ export function Attendance() {
   useEffect(() => {
     if (!batchId || !date) { setData(null); return; }
     setLoading(true);
-    GET(`/attendance/${batchId}?date=${date}`)
-      .then(res => {
-        setData(res);
-        // Initialize local marks
-        const initialMarks = {};
-        res.sheet.forEach(s => {
-          initialMarks[s.student_id] = s.status;
-        });
-        setMarks(initialMarks);
-      })
+    Promise.all([
+      GET(`/attendance/sheet/${batchId}?date=${date}`)
+    ]).then(([res]) => {
+      setData(res);
+      // Initialize local marks
+      const initialMarks = {};
+      res.sheet.forEach(s => {
+        initialMarks[s.student_id] = s.status;
+      });
+      setMarks(initialMarks);
+    })
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [batchId, date]);
@@ -61,7 +62,7 @@ export function Attendance() {
       const records = Object.entries(marks).map(([student_id, status]) => ({ student_id, status }));
       await POST('/attendance/mark', { institute_id: institute.id, batch_id: batchId, date, records }, 'Attendance saved');
       // reload
-      const res = await GET(`/attendance/${batchId}?date=${date}`);
+      const res = await GET(`/attendance/sheet/${batchId}?date=${date}`);
       setData(res);
     } catch { /* */ }
     setSaving(false);

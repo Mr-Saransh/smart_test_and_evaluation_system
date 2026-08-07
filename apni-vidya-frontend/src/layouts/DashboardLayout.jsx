@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCapIcon, LogOutIcon, CloseIcon, SearchIcon, BellIcon } from '../components/common/Icons';
+import { GraduationCapIcon, LogOutIcon, SearchIcon, BellIcon } from '../components/common/Icons';
 import { NAV_ITEMS, ROLE_LABELS, MOBILE_NAV, ROLE_HOME } from '../utils/constants';
 import { getInitials } from '../utils/helpers';
 
@@ -9,9 +9,13 @@ export function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
   const [darkMode, setDarkMode] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const role = user?.role;
   const navItems = NAV_ITEMS[role] || [];
@@ -40,42 +44,45 @@ export function DashboardLayout() {
 
   return (
     <div className="app-layout">
-      {/* Sidebar */}
-      <aside className={`sidebar${sidebarOpen ? ' open' : ''}${isCollapsed ? ' collapsed' : ''}`}>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div className="mobile-sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+
+      {/* Desktop Sidebar (Floating Glass) / Mobile Slide-over */}
+      <aside className={`sidebar${isCollapsed ? ' collapsed' : ''}${isMobileMenuOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-header">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div className="sidebar-logo">
-              <div className="sidebar-logo-icon">
-                <GraduationCapIcon size={20} color="#fff" />
-              </div>
-              <div>
-                <div className="sidebar-logo-text">Apni Vidya</div>
-                <div className="sidebar-logo-sub">{roleLabel}</div>
-              </div>
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">
+              <GraduationCapIcon size={20} color="#fff" />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {/* Desktop Collapse Toggle */}
-              <button
-                onClick={toggleCollapse}
-                className="btn-icon"
-                style={{ width: 28, height: 28, background: 'transparent', border: 'none', display: 'flex' }}
-                aria-label="Toggle sidebar"
-                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {isCollapsed ? <path d="M5 12h14M12 5l7 7-7 7" /> : <path d="M19 12H5M12 19l-7-7 7-7" />}
-                </svg>
-              </button>
-              {/* Mobile Close Button */}
-              <button
-                onClick={() => setSidebarOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4, display: sidebarOpen ? 'flex' : 'none' }}
-                aria-label="Close menu"
-              >
-                <CloseIcon size={20} color="#94a3b8" />
-              </button>
+            <div>
+              <div className="sidebar-logo-text">Apni Vidya</div>
+              <div className="sidebar-logo-sub">{roleLabel}</div>
             </div>
           </div>
+          <button
+            onClick={toggleCollapse}
+            className="btn-icon desktop-collapse-btn"
+            style={{ width: 28, height: 28 }}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {isCollapsed ? <path d="M5 12h14M12 5l7 7-7 7" /> : <path d="M19 12H5M12 19l-7-7 7-7" />}
+            </svg>
+          </button>
+
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="btn-icon mobile-close-btn"
+            style={{ width: 28, height: 28 }}
+            title="Close menu"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -83,7 +90,7 @@ export function DashboardLayout() {
             <button
               key={item.id}
               className={`sb-item${isActive(item.path) ? ' active' : ''}`}
-              onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+              onClick={() => navigate(item.path)}
               title={item.label}
             >
               <item.icon size={18} />
@@ -100,61 +107,63 @@ export function DashboardLayout() {
               <div className="sidebar-user-role">{roleLabel}</div>
             </div>
           </div>
-          <button className="btn bs bsm" style={{ width: '100%', justifyContent: 'center', background: '#1e293b', color: '#f8fafc', borderColor: '#334155' }} onClick={handleLogout} title="Sign Out">
-            <LogOutIcon size={14} color="#94a3b8" />
+          <button className="btn w-full" style={{ background: 'var(--bg-subtle)', color: 'var(--text-primary)', border: '1px solid var(--border-light)' }} onClick={handleLogout} title="Sign Out">
+            <LogOutIcon size={14} color="var(--text-secondary)" />
             <span className="logout-text">Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Backdrop for mobile */}
-      <div className={`backdrop${sidebarOpen ? ' show' : ''}`} onClick={() => setSidebarOpen(false)} />
-
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className={`main-content-area${isCollapsed ? ' collapsed' : ''}`}>
-        {/* Desktop Top Nav */}
+        
+        {/* Desktop Top Nav (Glass) */}
         <header className="topnav">
-          <div className="topnav-left">
-            <div className="search-bar">
-              <SearchIcon size={16} color="var(--text-tertiary)" />
-              <input className="search-inp" placeholder="Search..." />
-            </div>
+          <div className="search-bar">
+            <SearchIcon size={16} color="var(--text-tertiary)" />
+            <input className="search-inp" placeholder="Search across workspace..." />
           </div>
-          <div className="topnav-right">
-            <button className="btn-icon" onClick={toggleDark} title="Toggle dark mode" style={{ fontSize: 16 }}>
+          <div className="fx" style={{ gap: 16 }}>
+            <button className="btn-icon" onClick={toggleDark} title="Toggle dark mode">
               {darkMode ? '☀️' : '🌙'}
             </button>
             <button className="btn-icon" title="Notifications">
               <BellIcon size={18} />
             </button>
-            <div className="fx" style={{ gap: 8, cursor: 'pointer' }} onClick={() => navigate(navItems.find(n => n.id === 'profile' || n.id === 'settings')?.path || '#')}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', border: '1px solid var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
-                {initials}
+            <div className="fx" style={{ gap: 10, cursor: 'pointer' }} onClick={() => navigate(navItems.find(n => n.id === 'profile' || n.id === 'settings')?.path || '#')}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>{user?.full_name}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'capitalize' }}>{roleLabel}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>{user?.full_name}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'capitalize' }}>{roleLabel}</span>
+              <div className="sidebar-avatar" style={{ border: 'none', background: 'var(--gradient-brand)', color: 'white' }}>
+                {initials}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Mobile Top Bar */}
+        {/* Native Mobile Header (Glass) */}
         <div className="topbar-mobile">
-          <div className="fx" style={{ gap: 10 }}>
-            <button className="hamb" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <div className="fx" style={{ gap: 12 }}>
+            <button className="btn-icon" onClick={() => setIsMobileMenuOpen(true)}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
             </button>
-            <div className="fx" style={{ gap: 6 }}>
-              <GraduationCapIcon size={20} color="var(--color-primary)" />
-              <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em' }}>Apni Vidya</span>
+            <div className="fx" style={{ gap: 8 }}>
+              <div className="sidebar-logo-icon" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}>
+                <GraduationCapIcon size={16} color="#fff" />
+              </div>
+              <span style={{ fontWeight: 800, fontSize: '1.125rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Apni Vidya</span>
             </div>
           </div>
-          <div className="fx" style={{ gap: 8 }}>
-            <button className="btn-icon" onClick={toggleDark} style={{ width: 34, height: 34, fontSize: 14 }}>
+          <div className="fx" style={{ gap: 12 }}>
+            <button className="btn-icon" onClick={toggleDark} style={{ width: 32, height: 32 }}>
               {darkMode ? '☀️' : '🌙'}
             </button>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+            <div className="sidebar-avatar" style={{ width: 32, height: 32, fontSize: '0.75rem', border: 'none', background: 'var(--gradient-brand)', color: 'white' }}>
               {initials}
             </div>
           </div>
@@ -165,7 +174,7 @@ export function DashboardLayout() {
           <Outlet />
         </div>
 
-        {/* Mobile Bottom Nav */}
+        {/* Mobile Floating Bottom Nav (Glass Pill) */}
         <nav className="mobile-bottom-nav">
           {navItems.filter(n => mobileNavIds.includes(n.id)).slice(0, 5).map(item => {
             const active = isActive(item.path);
@@ -175,7 +184,7 @@ export function DashboardLayout() {
                 className={`bottom-nav-item${active ? ' active' : ''}`}
                 onClick={() => navigate(item.path)}
               >
-                <item.icon size={22} color={active ? 'var(--color-primary)' : 'var(--text-muted)'} />
+                <item.icon size={active ? 24 : 22} />
                 <span className="nav-label">{item.label}</span>
               </button>
             );

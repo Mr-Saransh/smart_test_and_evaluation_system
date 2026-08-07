@@ -33,7 +33,10 @@ async function list(req, res, next) {
       [institute_id]
     );
     res.json(result.rows);
-  } catch (err) { next(err); }
+  } catch (err) {
+    require('fs').appendFileSync('error_log.txt', new Date().toISOString() + '\\n' + err.stack + '\\n\\n');
+    next(err);
+  }
 }
 
 async function update(req, res, next) {

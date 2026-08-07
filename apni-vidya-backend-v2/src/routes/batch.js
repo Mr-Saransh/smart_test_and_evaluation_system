@@ -4,7 +4,10 @@ const batch = require('../controllers/batch');
 const { authenticate, authorize } = require('../middleware/auth');
 
 router.post('/', authenticate, authorize('institute_admin'), batch.create);
+router.get('/all/:institute_id', authenticate, batch.listAll);
+router.get('/details/:id', authenticate, batch.getDetails);
 router.get('/:institute_id', authenticate, batch.list);
 router.put('/:id', authenticate, authorize('institute_admin'), batch.update);
+router.delete('/:id', authenticate, authorize('institute_admin'), batch.remove);
 
 module.exports = router;

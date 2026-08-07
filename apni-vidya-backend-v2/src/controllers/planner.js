@@ -107,4 +107,18 @@ async function dueReminders(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, listForBatch, myTasks, toggle, dueReminders };
+// Delete a planner task.
+async function remove(req, res, next) {
+  try {
+    const { task_id } = req.params;
+    const task = await db.query('SELECT institute_id FROM study_tasks WHERE id = $1', [task_id]);
+    if (task.rows.length === 0) return res.status(404).json({ error: 'Task not found' });
+    if (!(await hasInstituteAccess(req.user, task.rows[0].institute_id))) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    await db.query('DELETE FROM study_tasks WHERE id = $1', [task_id]);
+    res.json({ deleted: true, id: task_id });
+  } catch (err) { next(err); }
+}
+
+module.exports = { create, listForBatch, myTasks, toggle, dueReminders, remove };
