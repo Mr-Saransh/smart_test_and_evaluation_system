@@ -6,7 +6,7 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
   max: 20,
-  ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
+  ssl: (process.env.DATABASE_URL || '').includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
 });
 
 // An idle client in the pool can emit an error on a transient network/DB

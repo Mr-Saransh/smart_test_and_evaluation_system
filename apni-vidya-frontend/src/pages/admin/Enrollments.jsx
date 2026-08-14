@@ -33,6 +33,19 @@ export function Enrollments() {
 
   const filtered = items.filter(i => i.status === tab);
 
+  // Group requests batch-wise so admins/teachers see each batch's queue
+  // separately instead of one long mixed list.
+  const groups = [];
+  const groupIndex = {};
+  filtered.forEach(r => {
+    const key = r.batch_id || 'unassigned';
+    if (!(key in groupIndex)) {
+      groupIndex[key] = groups.length;
+      groups.push({ key, batchName: r.batch_name || 'No Batch Specified', rows: [] });
+    }
+    groups[groupIndex[key]].rows.push(r);
+  });
+
   return (
     <div className="animate-fade-in">
       <div className="page-header page-header-row">
@@ -50,61 +63,65 @@ export function Enrollments() {
         ))}
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="tblwrap">
-          {loading ? (
-            <div style={{ padding: 20 }}><SkeletonTable rows={4} /></div>
-          ) : filtered.length === 0 ? (
-            <EmptyState icon={UserCheckIcon} title={`No ${tab} requests`} description={`There are no enrollment requests in the ${tab} queue.`} />
-          ) : (
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Student Details</th>
-                  <th>Parent Details</th>
-                  <th>Requested Batch</th>
-                  <th>Status</th>
-                  {tab === 'pending' && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(r => (
-                  <tr key={r.id}>
-                    <td><div className="muted" style={{ fontSize: 13 }}>{formatDate(r.created_at)}</div></td>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{r.student_name}</div>
-                      <div className="muted" style={{ fontSize: 13 }}>{r.student_phone}</div>
-                    </td>
-                    <td>
-                      {r.parent_name ? (
-                        <>
-                          <div style={{ fontWeight: 500 }}>{r.parent_name}</div>
-                          <div className="muted" style={{ fontSize: 13 }}>{r.parent_phone}</div>
-                        </>
-                      ) : <span className="muted">—</span>}
-                    </td>
-                    <td><div style={{ fontWeight: 500 }}>{r.batch_name || 'Not specified'}</div></td>
-                    <td>
-                      <span className="badge" style={{ background: STATUS_CONFIG[r.status]?.bg, color: STATUS_CONFIG[r.status]?.fg }}>
-                        {STATUS_CONFIG[r.status]?.label}
-                      </span>
-                    </td>
-                    {tab === 'pending' && (
-                      <td>
-                        <div className="fx" style={{ gap: 8 }}>
-                          <button className="btn bg bsm" onClick={() => handleAction(r.id, 'approve')} disabled={processing === r.id}>Approve</button>
-                          <button className="btn bd bsm" onClick={() => handleAction(r.id, 'reject')} disabled={processing === r.id}>Reject</button>
-                        </div>
-                      </td>
-                    )}
+      {loading ? (
+        <div className="card" style={{ padding: 20 }}><SkeletonTable rows={4} /></div>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={UserCheckIcon} title={`No ${tab} requests`} description={`There are no enrollment requests in the ${tab} queue.`} />
+      ) : (
+        groups.map(g => (
+          <div key={g.key} className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+            <div className="fxb" style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-tertiary)' }}>
+              <h3 className="h3" style={{ marginBottom: 0 }}>{g.batchName}</h3>
+              <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>{g.rows.length} {g.rows.length === 1 ? 'request' : 'requests'}</span>
+            </div>
+            <div className="tblwrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Student Details</th>
+                    <th>Parent Details</th>
+                    <th>Status</th>
+                    {tab === 'pending' && <th>Actions</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {g.rows.map(r => (
+                    <tr key={r.id}>
+                      <td><div className="muted" style={{ fontSize: 13 }}>{formatDate(r.created_at)}</div></td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{r.student_name}</div>
+                        <div className="muted" style={{ fontSize: 13 }}>{r.student_phone}</div>
+                      </td>
+                      <td>
+                        {r.parent_name ? (
+                          <>
+                            <div style={{ fontWeight: 500 }}>{r.parent_name}</div>
+                            <div className="muted" style={{ fontSize: 13 }}>{r.parent_phone}</div>
+                          </>
+                        ) : <span className="muted">—</span>}
+                      </td>
+                      <td>
+                        <span className="badge" style={{ background: STATUS_CONFIG[r.status]?.bg, color: STATUS_CONFIG[r.status]?.fg }}>
+                          {STATUS_CONFIG[r.status]?.label}
+                        </span>
+                      </td>
+                      {tab === 'pending' && (
+                        <td>
+                          <div className="fx" style={{ gap: 8 }}>
+                            <button className="btn bg bsm" onClick={() => handleAction(r.id, 'approve')} disabled={processing === r.id}>Approve</button>
+                            <button className="btn bd bsm" onClick={() => handleAction(r.id, 'reject')} disabled={processing === r.id}>Reject</button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 }

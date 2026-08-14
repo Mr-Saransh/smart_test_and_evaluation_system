@@ -57,7 +57,10 @@ async function submitRequest(req, res, next) {
 async function listRequests(req, res, next) {
   try {
     const { institute_id } = req.params;
-    const status = req.query.status || 'pending';
+    // No status query param (or status=all) returns every request so the
+    // frontend can show pending/approved/rejected tabs, grouped by batch,
+    // without needing a separate request per tab.
+    const status = req.query.status && req.query.status !== 'all' ? req.query.status : null;
 
     // Verify the requester owns/teaches at this institute
     const access = await verifyInstituteAccess(req.user, institute_id);
@@ -69,8 +72,8 @@ async function listRequests(req, res, next) {
       `SELECT er.*, b.name as batch_name 
        FROM enrollment_requests er
        LEFT JOIN batches b ON er.batch_id = b.id
-       WHERE er.institute_id = $1 AND er.status = $2
-       ORDER BY er.created_at DESC`,
+       WHERE er.institute_id = $1 AND ($2::text IS NULL OR er.status = $2)
+       ORDER BY b.name NULLS LAST, er.created_at DESC`,
       [institute_id, status]
     );
 

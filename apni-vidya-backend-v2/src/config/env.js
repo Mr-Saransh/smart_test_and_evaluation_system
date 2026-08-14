@@ -14,7 +14,7 @@ function fail(messages) {
   console.error('\n  [WARNING] Environment is not configured safely:\n');
   for (const m of messages) console.error(`   • ${m}`);
   console.error('\n  Please fix the above in your environment variables.\n');
-  // Removed process.exit(1) to prevent Vercel 500 crash on boot which causes CORS errors.
+  process.exit(1);
 }
 
 function validateEnv() {

@@ -7,7 +7,9 @@ async function mark(req, res, next) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { batch_id, date, entries } = req.body;
+    const { batch_id, date } = req.body;
+    // Frontend sends `records`; keep `entries` as a legacy alias so either shape works.
+    const entries = Array.isArray(req.body.entries) ? req.body.entries : req.body.records;
     if (!batch_id || !date || !Array.isArray(entries)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'batch_id, date and entries[] are required' });
@@ -59,7 +61,7 @@ async function sheet(req, res, next) {
        ORDER BY u.full_name`,
       [batch_id, date]
     );
-    res.json({ date, students: result.rows });
+    res.json({ date, sheet: result.rows });
   } catch (err) { next(err); }
 }
 
