@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { POST } from '../../utils/api';
-import { GraduationCapIcon, ArrowRightIcon } from '../../components/common/Icons';
+import { GraduationCapIcon, ArrowRightIcon, ShieldIcon, UsersIcon } from '../../components/common/Icons';
+import edtechBg from '../../assets/edtech_auth_bg.jpg';
+import './Auth.css';
 
 export function Login() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [remember, setRemember] = useState(true);
@@ -55,84 +58,154 @@ export function Login() {
 
   return (
     <div className="auth-container">
+      {/* Background illustration & ambient glowing orbs */}
+      <div className="auth-bg-layer" style={{ backgroundImage: `url(${edtechBg})` }} />
+      <div className="auth-bg-tint" />
+      <div className="auth-gradient-orb auth-orb-1" />
+      <div className="auth-gradient-orb auth-orb-2" />
+
       <div className="auth-split">
+        {/* Desktop Left Brand & Value Proposition */}
         <div className="auth-left">
-          <div className="auth-brand">
-            <GraduationCapIcon size={32} color="#fff" />
+          <Link to="/" className="auth-brand" style={{ textDecoration: 'none' }}>
+            <div className="auth-brand-icon">
+              <GraduationCapIcon size={26} color="#fff" />
+            </div>
             <h1>Apni Vidya</h1>
-          </div>
+          </Link>
+
           <div className="auth-hero">
-            <h2>The smart way to manage your institute.</h2>
+            <h2>The smarter way to power your institute.</h2>
             <p>
-              Complete ERP for coaching institutes — admissions, batches,
-              attendance, tests, fees, and parent communication in one platform.
+              Automate admissions, batch timetables, attendance, digital exams, fee collections,
+              and real-time parent reports — all in one modern platform.
             </p>
+
+            <div className="auth-hero-features">
+              <div className="auth-hero-feat-item">
+                <span className="auth-hero-feat-bullet">✓</span>
+                <span>QR-based rapid student self-onboarding</span>
+              </div>
+              <div className="auth-hero-feat-item">
+                <span className="auth-hero-feat-bullet">✓</span>
+                <span>Automated MCQ & Subjective test evaluation</span>
+              </div>
+              <div className="auth-hero-feat-item">
+                <span className="auth-hero-feat-bullet">✓</span>
+                <span>WhatsApp & SMS fee reminder dispatches</span>
+              </div>
+            </div>
           </div>
-          <div style={{ opacity: 0.7, fontSize: 13, position: 'relative', zIndex: 1 }}>
-            Trusted by 500+ coaching institutes across India
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, fontSize: 13 }}>
+            <ShieldIcon size={16} color="#a5b4fc" />
+            <span>Trusted by 500+ coaching institutes & schools across India</span>
           </div>
         </div>
+
+        {/* Right Auth Area (Mobile Header at Top, Form centered in middle) */}
         <div className="auth-right">
-          <div className="card auth-card">
-            <div style={{ marginBottom: 28 }}>
-              <h2 className="h2" style={{ marginBottom: 6 }}>Welcome back</h2>
-              <p className="muted">Sign in to your account to continue</p>
+          {/* Mobile Top Brand Header with Crisp White Text */}
+          <Link to="/" className="mobile-auth-header">
+            <div className="logo-badge">
+              <GraduationCapIcon size={26} color="#fff" />
             </div>
-            <form onSubmit={handleLogin} className="auth-form">
-              {error && <div className="auth-error animate-fade-in">{error}</div>}
+            <div className="logo-text">Apni Vidya</div>
+          </Link>
+          <div className="mobile-auth-tagline">Coaching Institute ERP</div>
 
-              <div className="field">
-                <label htmlFor="login-identifier">Phone or Email</label>
-                <input
-                  id="login-identifier"
-                  className="inp"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Enter your registered phone or email"
-                  autoComplete="username"
-                />
+          {/* Form Card */}
+          <div className="auth-card-container">
+            <div className="auth-card">
+              <div className="auth-card-badge">
+                ✨ Secure Portal Access
               </div>
 
-              <div className="field">
-                <label htmlFor="login-password">Password</label>
-                <input
-                  id="login-password"
-                  className="inp"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                />
+              <div className="auth-card-header">
+                <h2 className="h2">Welcome back</h2>
+                <p className="muted">Sign in with your registered phone or email</p>
               </div>
 
-              <div className="fxb" style={{ marginBottom: 24, marginTop: -4 }}>
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                  />
-                  <span>Remember me</span>
-                </label>
-                <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
-              </div>
+              <form onSubmit={handleLogin} className="auth-form">
+                {error && <div className="auth-error">{error}</div>}
 
-              <button
-                type="submit"
-                className="btn bp btn-full"
-                disabled={loading}
-                style={{ height: 44, fontSize: 15 }}
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-                {!loading && <ArrowRightIcon size={16} />}
-              </button>
-            </form>
-            <div className="auth-footer">
-              New to Apni Vidya?{' '}
-              <Link to="/signup">Create an account</Link>
+                <div className="field">
+                  <label htmlFor="login-identifier">Phone or Email</label>
+                  <div className="auth-input-wrapper">
+                    <div className="auth-input-icon">
+                      <UsersIcon size={18} color="#64748b" />
+                    </div>
+                    <input
+                      id="login-identifier"
+                      className="inp"
+                      type="text"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="e.g. 9876543210 or admin@institute.com"
+                      autoComplete="username"
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label htmlFor="login-password">Password</label>
+                  <div className="auth-input-wrapper">
+                    <div className="auth-input-icon">
+                      <ShieldIcon size={18} color="#64748b" />
+                    </div>
+                    <input
+                      id="login-password"
+                      className="inp"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      style={{ paddingRight: 44 }}
+                    />
+                    <button
+                      type="button"
+                      className="auth-eye-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="fxb" style={{ marginBottom: 20, marginTop: -4 }}>
+                  <label className="checkbox-row" style={{ cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                    />
+                    <span style={{ fontSize: 13, color: '#334155', fontWeight: 600 }}>Remember me</span>
+                  </label>
+                  <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
+                </div>
+
+                <button
+                  type="submit"
+                  className="auth-submit-btn"
+                  disabled={loading}
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                  {!loading && <ArrowRightIcon size={16} />}
+                </button>
+              </form>
+
+              <div className="auth-footer">
+                New to Apni Vidya?{' '}
+                <Link to="/signup">Create an institute account</Link>
+              </div>
             </div>
+          </div>
+
+          {/* Bottom Copyright in Crisp White */}
+          <div className="auth-bottom-brand-note">
+            © {new Date().getFullYear()} Apni Vidya • Fast, Secure & Reliable
           </div>
         </div>
       </div>

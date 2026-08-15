@@ -91,11 +91,13 @@ export function Courses() {
               <h2>{editing ? 'Edit Course' : 'New Course'}</h2>
               <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
             </div>
-            <div className="field"><label>Course Name *</label><input className="inp" value={form.name} onChange={set('name')} placeholder="e.g. JEE Advanced 2026" /></div>
-            <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={set('description')} placeholder="Brief description" /></div>
-            <div className="g2">
-              <div className="field"><label>Fee Amount (₹)</label><input className="inp" type="number" value={form.fee_amount} onChange={set('fee_amount')} placeholder="0" /></div>
-              <div className="field"><label>Duration (days)</label><input className="inp" type="number" value={form.duration_days} onChange={set('duration_days')} placeholder="365" /></div>
+            <div className="modal-body">
+              <div className="field"><label>Course Name *</label><input className="inp" value={form.name} onChange={set('name')} placeholder="e.g. JEE Advanced 2026" /></div>
+              <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={set('description')} placeholder="Brief description" /></div>
+              <div className="g2">
+                <div className="field"><label>Fee Amount (₹)</label><input className="inp" type="number" value={form.fee_amount} onChange={set('fee_amount')} placeholder="0" /></div>
+                <div className="field"><label>Duration (days)</label><input className="inp" type="number" value={form.duration_days} onChange={set('duration_days')} placeholder="365" /></div>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>

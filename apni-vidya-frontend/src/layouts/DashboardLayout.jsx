@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GraduationCapIcon, LogOutIcon, SearchIcon, BellIcon } from '../components/common/Icons';
-import { NAV_ITEMS, ROLE_LABELS, MOBILE_NAV, ROLE_HOME } from '../utils/constants';
+import { NAV_ITEMS, ROLE_LABELS, MOBILE_NAV, ROLE_HOME, flatNavItems } from '../utils/constants';
 import { getInitials } from '../utils/helpers';
+import './DashboardLayout.css';
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -18,7 +19,9 @@ export function DashboardLayout() {
   }, [location.pathname]);
 
   const role = user?.role;
-  const navItems = NAV_ITEMS[role] || [];
+  const rawNavItems = NAV_ITEMS[role] || [];
+  const isGrouped = rawNavItems.length > 0 && rawNavItems[0]?.items;
+  const allFlatItems = flatNavItems(role);
   const roleLabel = ROLE_LABELS[role] || 'Portal';
   const initials = getInitials(user?.full_name);
   const mobileNavIds = MOBILE_NAV[role] || [];
@@ -42,6 +45,30 @@ export function DashboardLayout() {
     return location.pathname.startsWith(path);
   };
 
+  /* ─── Sidebar nav rendering ─── */
+  const renderNavItems = (items) => items.map(item => (
+    <button
+      key={item.id}
+      className={`sb-item${isActive(item.path) ? ' active' : ''}`}
+      onClick={() => navigate(item.path)}
+      title={item.label}
+    >
+      <item.icon size={17} />
+      <span className="nav-label">{item.label}</span>
+    </button>
+  ));
+
+  const renderGroupedNav = () => rawNavItems.map((section, idx) => (
+    <div key={section.group || idx}>
+      {section.group && (
+        <div className="sidebar-group-label">{section.group}</div>
+      )}
+      {renderNavItems(section.items)}
+    </div>
+  ));
+
+  const renderFlatNav = () => renderNavItems(rawNavItems);
+
   return (
     <div className="app-layout">
       {/* Mobile Overlay */}
@@ -49,12 +76,12 @@ export function DashboardLayout() {
         <div className="mobile-sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
       )}
 
-      {/* Desktop Sidebar (Floating Glass) / Mobile Slide-over */}
+      {/* Desktop Sidebar / Mobile Slide-over */}
       <aside className={`sidebar${isCollapsed ? ' collapsed' : ''}${isMobileMenuOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div className="sidebar-logo-icon">
-              <GraduationCapIcon size={20} color="#fff" />
+              <GraduationCapIcon size={18} color="#fff" />
             </div>
             <div>
               <div className="sidebar-logo-text">Apni Vidya</div>
@@ -86,17 +113,7 @@ export function DashboardLayout() {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              className={`sb-item${isActive(item.path) ? ' active' : ''}`}
-              onClick={() => navigate(item.path)}
-              title={item.label}
-            >
-              <item.icon size={18} />
-              <span className="nav-label">{item.label}</span>
-            </button>
-          ))}
+          {isGrouped ? renderGroupedNav() : renderFlatNav()}
         </nav>
 
         <div className="sidebar-footer">
@@ -107,8 +124,8 @@ export function DashboardLayout() {
               <div className="sidebar-user-role">{roleLabel}</div>
             </div>
           </div>
-          <button className="btn w-full" style={{ background: 'var(--bg-subtle)', color: 'var(--text-primary)', border: '1px solid var(--border-light)' }} onClick={handleLogout} title="Sign Out">
-            <LogOutIcon size={14} color="var(--text-secondary)" />
+          <button className="btn w-full" style={{ background: 'rgba(255,255,255,.06)', color: '#CBD5E1', border: '1px solid rgba(255,255,255,.08)', justifyContent: 'center' }} onClick={handleLogout} title="Sign Out">
+            <LogOutIcon size={14} color="#94A3B8" />
             <span className="logout-text">Sign Out</span>
           </button>
         </div>
@@ -117,53 +134,53 @@ export function DashboardLayout() {
       {/* Main Content Area */}
       <div className={`main-content-area${isCollapsed ? ' collapsed' : ''}`}>
         
-        {/* Desktop Top Nav (Glass) */}
+        {/* Desktop Top Nav */}
         <header className="topnav">
           <div className="search-bar">
             <SearchIcon size={16} color="var(--text-tertiary)" />
             <input className="search-inp" placeholder="Search across workspace..." />
           </div>
-          <div className="fx" style={{ gap: 16 }}>
+          <div className="fx" style={{ gap: 14 }}>
             <button className="btn-icon" onClick={toggleDark} title="Toggle dark mode">
               {darkMode ? '☀️' : '🌙'}
             </button>
             <button className="btn-icon" title="Notifications">
               <BellIcon size={18} />
             </button>
-            <div className="fx" style={{ gap: 10, cursor: 'pointer' }} onClick={() => navigate(navItems.find(n => n.id === 'profile' || n.id === 'settings')?.path || '#')}>
+            <div className="fx" style={{ gap: 10, cursor: 'pointer' }} onClick={() => navigate(allFlatItems.find(n => n.id === 'profile' || n.id === 'settings')?.path || '#')}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>{user?.full_name}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'capitalize' }}>{roleLabel}</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>{user?.full_name}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'capitalize' }}>{roleLabel}</span>
               </div>
-              <div className="sidebar-avatar" style={{ border: 'none', background: 'var(--gradient-brand)', color: 'white' }}>
+              <div className="sidebar-avatar" style={{ border: 'none', background: 'var(--gradient-brand)', color: 'white', width: 36, height: 36 }}>
                 {initials}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Native Mobile Header (Glass) */}
+        {/* Mobile Header */}
         <div className="topbar-mobile">
-          <div className="fx" style={{ gap: 12 }}>
-            <button className="btn-icon" onClick={() => setIsMobileMenuOpen(true)}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="fx" style={{ gap: 10 }}>
+            <button className="btn-icon" onClick={() => setIsMobileMenuOpen(true)} style={{ width: 36, height: 36 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
               </svg>
             </button>
             <div className="fx" style={{ gap: 8 }}>
-              <div className="sidebar-logo-icon" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}>
-                <GraduationCapIcon size={16} color="#fff" />
+              <div className="sidebar-logo-icon" style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)' }}>
+                <GraduationCapIcon size={15} color="#fff" />
               </div>
-              <span style={{ fontWeight: 800, fontSize: '1.125rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Apni Vidya</span>
+              <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Apni Vidya</span>
             </div>
           </div>
-          <div className="fx" style={{ gap: 12 }}>
+          <div className="fx" style={{ gap: 10 }}>
             <button className="btn-icon" onClick={toggleDark} style={{ width: 32, height: 32 }}>
               {darkMode ? '☀️' : '🌙'}
             </button>
-            <div className="sidebar-avatar" style={{ width: 32, height: 32, fontSize: '0.75rem', border: 'none', background: 'var(--gradient-brand)', color: 'white' }}>
+            <div className="sidebar-avatar" style={{ width: 30, height: 30, fontSize: '0.7rem', border: 'none', background: 'var(--gradient-brand)', color: 'white' }}>
               {initials}
             </div>
           </div>
@@ -174,9 +191,9 @@ export function DashboardLayout() {
           <Outlet />
         </div>
 
-        {/* Mobile Floating Bottom Nav (Glass Pill) */}
+        {/* Mobile Floating Bottom Nav */}
         <nav className="mobile-bottom-nav">
-          {navItems.filter(n => mobileNavIds.includes(n.id)).slice(0, 5).map(item => {
+          {allFlatItems.filter(n => mobileNavIds.includes(n.id)).slice(0, 5).map(item => {
             const active = isActive(item.path);
             return (
               <button
@@ -184,7 +201,7 @@ export function DashboardLayout() {
                 className={`bottom-nav-item${active ? ' active' : ''}`}
                 onClick={() => navigate(item.path)}
               >
-                <item.icon size={active ? 24 : 22} />
+                <item.icon size={active ? 22 : 20} />
                 <span className="nav-label">{item.label}</span>
               </button>
             );

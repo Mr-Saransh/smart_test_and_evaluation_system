@@ -162,7 +162,7 @@ export function Tests() {
   const statusBgs = { draft: '#f1f5f9', active: '#d1fae5', completed: '#dbeafe' };
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+    <div className="animate-fade-in has-detail-drawer" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
       
       {/* Main Column */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -241,7 +241,7 @@ export function Tests() {
 
       {/* Details Drawer */}
       {selectedTest && (
-        <div className="glass-panel animate-fade-in" style={{ width: 450, flexShrink: 0, position: 'sticky', top: 24, padding: 0, overflow: 'hidden', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-panel animate-fade-in detail-drawer">
           <div className="fxb" style={{ padding: '24px', background: 'var(--gradient-brand)', color: 'white' }}>
             <div>
               <h2 className="h2" style={{ marginBottom: 4, color: 'white' }}>{selectedTest.title}</h2>
@@ -338,7 +338,7 @@ export function Tests() {
               <button className="btn-icon" onClick={() => setShowCreate(false)}>✕</button>
             </div>
             
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8 }}>
+            <div className="modal-body">
               <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
                 <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Test Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Physics Mock Test 1" /></div>
                 <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Assign Batch *</label>
@@ -414,7 +414,7 @@ export function Tests() {
               )}
             </div>
 
-            <div className="modal-footer" style={{ flexShrink: 0, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+            <div className="modal-footer">
               <button className="btn bd" onClick={() => setShowCreate(false)}>Cancel</button>
               <button className="btn bp" onClick={createTest} disabled={saving}>
                 {saving ? 'Processing...' : 'Save & Launch Test'}

@@ -108,26 +108,28 @@ export function Announcements() {
               <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
             </div>
             
-            <div className="field">
-              <label>Audience *</label>
-              <select className="sel w-full" value={form.audience} onChange={setF('audience')}>
-                <option value="all">All Students</option>
-                <option value="batch">Specific Batch</option>
-              </select>
-            </div>
-
-            {form.audience === 'batch' && (
-              <div className="field animate-fade-in">
-                <label>Select Batch *</label>
-                <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                  <option value="">Choose Batch...</option>
-                  {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            <div className="modal-body">
+              <div className="field">
+                <label>Audience *</label>
+                <select className="sel w-full" value={form.audience} onChange={setF('audience')}>
+                  <option value="all">All Students</option>
+                  <option value="batch">Specific Batch</option>
                 </select>
               </div>
-            )}
 
-            <div className="field"><label>Title / Subject *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Holiday on Friday" /></div>
-            <div className="field"><label>Message *</label><textarea className="inp" style={{ height: 120 }} value={form.body} onChange={setF('body')} placeholder="Detailed message content..." /></div>
+              {form.audience === 'batch' && (
+                <div className="field animate-fade-in">
+                  <label>Select Batch *</label>
+                  <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+                    <option value="">Choose Batch...</option>
+                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div className="field"><label>Title / Subject *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Holiday on Friday" /></div>
+              <div className="field"><label>Message *</label><textarea className="inp" style={{ height: 120 }} value={form.body} onChange={setF('body')} placeholder="Detailed message content..." /></div>
+            </div>
 
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>

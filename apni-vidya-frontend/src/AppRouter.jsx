@@ -34,6 +34,7 @@ const Timetable = lazy(() => import('./pages/admin/Timetable').then(m => ({ defa
 const Planner = lazy(() => import('./pages/admin/Planner').then(m => ({ default: m.Planner })));
 const StudyMaterials = lazy(() => import('./pages/admin/StudyMaterials').then(m => ({ default: m.StudyMaterials })));
 const Announcements = lazy(() => import('./pages/admin/Announcements').then(m => ({ default: m.Announcements })));
+const Notifications = lazy(() => import('./pages/admin/Notifications').then(m => ({ default: m.Notifications })));
 const Reports = lazy(() => import('./pages/admin/Reports').then(m => ({ default: m.Reports })));
 const Settings = lazy(() => import('./pages/admin/Settings').then(m => ({ default: m.Settings })));
 
@@ -102,6 +103,7 @@ export function AppRouter() {
         <Route path="planner" element={<Suspense fallback={<LoadingFallback />}><Planner /></Suspense>} />
         <Route path="materials" element={<Suspense fallback={<LoadingFallback />}><StudyMaterials /></Suspense>} />
         <Route path="announcements" element={<Suspense fallback={<LoadingFallback />}><Announcements /></Suspense>} />
+        <Route path="notifications" element={<Suspense fallback={<LoadingFallback />}><Notifications /></Suspense>} />
         <Route path="reports" element={<Suspense fallback={<LoadingFallback />}><Reports /></Suspense>} />
         <Route path="settings" element={<Suspense fallback={<LoadingFallback />}><Settings /></Suspense>} />
       </Route>

@@ -81,7 +81,7 @@ export function Attendance() {
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-        <div className="fx fw" style={{ gap: 16 }}>
+        <div className="fx fw" style={{ gap: window.innerWidth <= 640 ? 12 : 16 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Select Batch</label>
             <select className="sel w-full" value={batchId} onChange={e => setBatchId(e.target.value)}>
@@ -104,15 +104,14 @@ export function Attendance() {
         <EmptyState icon={ClipboardIcon} title="No Students" description="There are no students enrolled in this batch." />
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="fxb" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-tertiary)' }}>
+          <div className="fxb fw" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', gap: 12 }}>
             <div>
               <h3 className="h3" style={{ marginBottom: 2 }}>{formatDate(date)}</h3>
               <div className="muted" style={{ fontSize: 13 }}>{presentCount}/{totalCount} Present ({pct}%)</div>
             </div>
-            <div className="fx" style={{ gap: 8 }}>
+            <div className="fx fw" style={{ gap: 8 }}>
               <button className="btn bs bsm" onClick={() => markAll('present')}>Mark All P</button>
               <button className="btn bs bsm" onClick={() => markAll('absent')}>Mark All A</button>
-              <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save Attendance'}</button>
             </div>
           </div>
           
@@ -152,7 +151,7 @@ export function Attendance() {
                             }}
                             onClick={() => handleMark(s.student_id, opt.value)}
                           >
-                            {opt.label}
+                            {window.innerWidth <= 640 ? opt.shortLabel : opt.label}
                           </button>
                         ))}
                       </div>
@@ -162,6 +161,14 @@ export function Attendance() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+      
+      {data?.sheet?.length > 0 && (
+        <div className="sticky-action-bar">
+          <button className="btn bp w-full" style={{ maxWidth: 400, margin: '0 auto' }} onClick={save} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Attendance'}
+          </button>
         </div>
       )}
     </div>

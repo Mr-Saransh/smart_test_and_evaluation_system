@@ -35,6 +35,8 @@ export const ROLE_HOME = {
 };
 
 /* ─── Sidebar Navigation Per Role ─── */
+/* Admin uses grouped navigation; other roles use flat arrays.
+   Use flatNavItems(role) to get a flat array for any role. */
 export const NAV_ITEMS = {
   [ROLES.SUPER_ADMIN]: [
     { id: 'overview', label: 'Platform Dashboard', path: '/super-admin', icon: HomeIcon },
@@ -45,25 +47,39 @@ export const NAV_ITEMS = {
   ],
 
   [ROLES.INSTITUTE_ADMIN]: [
-    { id: 'overview', label: 'Dashboard', path: '/admin', icon: HomeIcon },
-    { id: 'institute', label: 'Institute', path: '/admin/institute', icon: BuildingIcon },
-    { id: 'courses', label: 'Courses', path: '/admin/courses', icon: BookOpenIcon },
-    { id: 'batches', label: 'Batches', path: '/admin/batches', icon: UsersIcon },
-    { id: 'teachers', label: 'Teachers', path: '/admin/teachers', icon: UserCheckIcon },
-    { id: 'students', label: 'Students', path: '/admin/students', icon: UsersIcon },
-    { id: 'enrollments', label: 'Enrollments', path: '/admin/enrollments', icon: UserCheckIcon },
-    { id: 'attendance', label: 'Attendance', path: '/admin/attendance', icon: ClipboardIcon },
-    { id: 'fees', label: 'Fees', path: '/admin/fees', icon: CurrencyIcon },
-    { id: 'tests', label: 'Tests', path: '/admin/tests', icon: FileTextIcon },
-    { id: 'live-classes', label: 'Live Classes', path: '/admin/live-classes', icon: VideoIcon },
-    { id: 'timetable', label: 'Timetable', path: '/admin/timetable', icon: CalendarIcon },
-    { id: 'planner', label: 'Study Planner', path: '/admin/planner', icon: ClockIcon },
-    { id: 'materials', label: 'Study Materials', path: '/admin/materials', icon: BookOpenIcon },
-    { id: 'announcements', label: 'Announcements', path: '/admin/announcements', icon: MegaphoneIcon },
-    { id: 'notifications', label: 'Notifications', path: '/admin/notifications', icon: BellIcon },
-    { id: 'reports', label: 'Reports', path: '/admin/reports', icon: TrendingUpIcon },
-    { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
-    { id: 'settings', label: 'Settings', path: '/admin/settings', icon: SettingsIcon },
+    { group: null, items: [
+      { id: 'overview', label: 'Dashboard', path: '/admin', icon: HomeIcon },
+    ]},
+    { group: 'People', items: [
+      { id: 'students', label: 'Students', path: '/admin/students', icon: UsersIcon },
+      { id: 'teachers', label: 'Teachers', path: '/admin/teachers', icon: UserCheckIcon },
+      { id: 'enrollments', label: 'Enrollments', path: '/admin/enrollments', icon: UserCheckIcon },
+    ]},
+    { group: 'Academics', items: [
+      { id: 'courses', label: 'Courses', path: '/admin/courses', icon: BookOpenIcon },
+      { id: 'batches', label: 'Batches', path: '/admin/batches', icon: BuildingIcon },
+      { id: 'timetable', label: 'Timetable', path: '/admin/timetable', icon: CalendarIcon },
+      { id: 'planner', label: 'Study Planner', path: '/admin/planner', icon: ClockIcon },
+      { id: 'materials', label: 'Materials', path: '/admin/materials', icon: BookOpenIcon },
+    ]},
+    { group: 'Operations', items: [
+      { id: 'attendance', label: 'Attendance', path: '/admin/attendance', icon: ClipboardIcon },
+      { id: 'tests', label: 'Tests', path: '/admin/tests', icon: FileTextIcon },
+      { id: 'live-classes', label: 'Live Classes', path: '/admin/live-classes', icon: VideoIcon },
+    ]},
+    { group: 'Finance', items: [
+      { id: 'fees', label: 'Fees', path: '/admin/fees', icon: CurrencyIcon },
+    ]},
+    { group: 'Communication', items: [
+      { id: 'announcements', label: 'Announcements', path: '/admin/announcements', icon: MegaphoneIcon },
+      { id: 'notifications', label: 'Notifications', path: '/admin/notifications', icon: BellIcon },
+      { id: 'reports', label: 'Reports', path: '/admin/reports', icon: TrendingUpIcon },
+      { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
+    ]},
+    { group: 'Settings', items: [
+      { id: 'institute', label: 'Institute', path: '/admin/institute', icon: BuildingIcon },
+      { id: 'settings', label: 'Settings', path: '/admin/settings', icon: SettingsIcon },
+    ]},
   ],
 
   [ROLES.TEACHER]: [
@@ -114,6 +130,19 @@ export const MOBILE_NAV = {
   [ROLES.STUDENT]: ['home', 'timetable', 'tests', 'materials', 'progress'],
   [ROLES.PARENT]: ['home', 'attendance', 'progress', 'fees', 'announcements'],
 };
+
+/**
+ * Flatten a possibly-grouped NAV_ITEMS array into a simple flat array of items.
+ * Works for both grouped (admin) and flat (other roles) structures.
+ */
+export function flatNavItems(role) {
+  const items = NAV_ITEMS[role] || [];
+  // If the first element has an `items` key, it's grouped
+  if (items.length > 0 && items[0].items) {
+    return items.flatMap(g => g.items);
+  }
+  return items;
+}
 
 /* ─── Status Colors & Labels ─── */
 export const STATUS_CONFIG = {

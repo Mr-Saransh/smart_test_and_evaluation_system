@@ -92,14 +92,16 @@ export function Teachers() {
               <h2>{editing ? 'Edit Teacher' : 'New Teacher'}</h2>
               <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
             </div>
-            <div className="field"><label>Full Name *</label><input className="inp" value={form.full_name} onChange={set('full_name')} placeholder="Teacher name" /></div>
-            <div className="g2">
-              <div className="field"><label>Phone Number *</label><input className="inp" type="tel" value={form.phone} onChange={set('phone')} placeholder="10-digit number" /></div>
-              <div className="field"><label>Email (Optional)</label><input className="inp" type="email" value={form.email} onChange={set('email')} placeholder="Email address" /></div>
-            </div>
-            <div className="g2">
-              <div className="field"><label>Subject / Role</label><input className="inp" value={form.subject} onChange={set('subject')} placeholder="e.g. Physics" /></div>
-              <div className="field"><label>{editing ? 'New Password (Optional)' : 'Password *'}</label><input className="inp" type="password" value={form.password} onChange={set('password')} placeholder="Min 8 chars" /></div>
+            <div className="modal-body">
+              <div className="field"><label>Full Name *</label><input className="inp" value={form.full_name} onChange={set('full_name')} placeholder="Teacher name" /></div>
+              <div className="g2">
+                <div className="field"><label>Phone Number *</label><input className="inp" type="tel" value={form.phone} onChange={set('phone')} placeholder="10-digit number" /></div>
+                <div className="field"><label>Email (Optional)</label><input className="inp" type="email" value={form.email} onChange={set('email')} placeholder="Email address" /></div>
+              </div>
+              <div className="g2">
+                <div className="field"><label>Subject / Role</label><input className="inp" value={form.subject} onChange={set('subject')} placeholder="e.g. Physics" /></div>
+                <div className="field"><label>{editing ? 'New Password (Optional)' : 'Password *'}</label><input className="inp" type="password" value={form.password} onChange={set('password')} placeholder="Min 8 chars" /></div>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>

@@ -278,18 +278,20 @@ export function Fees() {
               <h2>New Fee Structure</h2>
               <button className="btn-icon" onClick={() => setShowCreate(false)}>✕</button>
             </div>
-            <div className="field">
-              <label>Assign To Batch (Optional)</label>
-              <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                <option value="">All Institute Students</option>
-                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-              <div className="field-hint">Assigning will automatically create fee records for all students in the selected group.</div>
-            </div>
-            <div className="field"><label>Fee Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Tuition Fee Q1" /></div>
-            <div className="g2">
-              <div className="field"><label>Total Amount (₹) *</label><input className="inp" type="number" value={form.amount} onChange={setF('amount')} placeholder="0" /></div>
-              <div className="field"><label>Due Date *</label><input className="inp" type="date" value={form.due_date} onChange={setF('due_date')} /></div>
+            <div className="modal-body">
+              <div className="field">
+                <label>Assign To Batch (Optional)</label>
+                <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+                  <option value="">All Institute Students</option>
+                  {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+                <div className="field-hint">Assigning will automatically create fee records for all students in the selected group.</div>
+              </div>
+              <div className="field"><label>Fee Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Tuition Fee Q1" /></div>
+              <div className="g2">
+                <div className="field"><label>Total Amount (₹) *</label><input className="inp" type="number" value={form.amount} onChange={setF('amount')} placeholder="0" /></div>
+                <div className="field"><label>Due Date *</label><input className="inp" type="date" value={form.due_date} onChange={setF('due_date')} /></div>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShowCreate(false)}>Cancel</button>
@@ -307,23 +309,25 @@ export function Fees() {
               <h2>Record Manual Payment</h2>
               <button className="btn-icon" onClick={() => setShowPay(false)}>✕</button>
             </div>
-            <div style={{ background: 'var(--bg-tertiary)', padding: 16, borderRadius: 12, marginBottom: 20 }}>
-              <div className="fxb" style={{ marginBottom: 8 }}>
-                <span className="muted" style={{ fontSize: 13 }}>Student:</span>
-                <span style={{ fontWeight: 600 }}>{payRec.student_name}</span>
+            <div className="modal-body">
+              <div style={{ background: 'var(--bg-tertiary)', padding: 16, borderRadius: 12, marginBottom: 20 }}>
+                <div className="fxb" style={{ marginBottom: 8 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>Student:</span>
+                  <span style={{ fontWeight: 600 }}>{payRec.student_name}</span>
+                </div>
+                <div className="fxb" style={{ marginBottom: 8 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>Fee:</span>
+                  <span style={{ fontWeight: 500 }}>{payRec.fee_title}</span>
+                </div>
+                <div className="fxb" style={{ borderTop: '1px solid var(--border-color)', paddingTop: 8, marginTop: 8 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>Balance Due:</span>
+                  <span style={{ fontWeight: 700, color: 'var(--color-error)', fontSize: 18 }}>
+                    {formatCurrency(Math.max(0, Number(payRec.amount_due) - Number(payRec.amount_paid)))}
+                  </span>
+                </div>
               </div>
-              <div className="fxb" style={{ marginBottom: 8 }}>
-                <span className="muted" style={{ fontSize: 13 }}>Fee:</span>
-                <span style={{ fontWeight: 500 }}>{payRec.fee_title}</span>
-              </div>
-              <div className="fxb" style={{ borderTop: '1px solid var(--border-color)', paddingTop: 8, marginTop: 8 }}>
-                <span className="muted" style={{ fontSize: 13 }}>Balance Due:</span>
-                <span style={{ fontWeight: 700, color: 'var(--color-error)', fontSize: 18 }}>
-                  {formatCurrency(Math.max(0, Number(payRec.amount_due) - Number(payRec.amount_paid)))}
-                </span>
-              </div>
+              <div className="field"><label>Amount Received (Cash/Offline) (₹)</label><input className="inp" type="number" value={payAmt} onChange={e => setPayAmt(e.target.value)} autoFocus /></div>
             </div>
-            <div className="field"><label>Amount Received (Cash/Offline) (₹)</label><input className="inp" type="number" value={payAmt} onChange={e => setPayAmt(e.target.value)} autoFocus /></div>
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShowPay(false)}>Cancel</button>
               <button className="btn bp" onClick={recordPayment} disabled={paying}>{paying ? 'Recording...' : 'Record Payment'}</button>

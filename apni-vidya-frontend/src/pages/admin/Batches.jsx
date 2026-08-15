@@ -79,7 +79,7 @@ export function Batches() {
   if (!institute) return <EmptyState icon={BuildingIcon} title="Set up your institute first" />;
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+    <div className="animate-fade-in has-detail-drawer" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
       
       {/* Main List Column */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -145,7 +145,7 @@ export function Batches() {
 
       {/* Detail Drawer (Side Panel) */}
       {selectedBatch && (
-        <div className="glass-panel animate-fade-in" style={{ width: 400, flexShrink: 0, position: 'sticky', top: 24, padding: 0, overflow: 'hidden', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-panel animate-fade-in detail-drawer">
           <div className="fxb" style={{ padding: '24px', background: 'var(--gradient-brand)', color: 'white' }}>
             <div>
               <h2 className="h2" style={{ marginBottom: 4, color: 'white' }}>{selectedBatch.name}</h2>
@@ -232,15 +232,17 @@ export function Batches() {
               <h2>{editing ? 'Edit Batch' : 'New Batch'}</h2>
               <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
             </div>
-            <div className="field"><label>Batch Name *</label><input className="inp" value={form.name} onChange={setF('name')} placeholder="e.g. JEE 2026 Morning" /></div>
-            <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={setF('description')} placeholder="Brief description" rows={2}/></div>
-            <div className="g2">
-              <div className="field"><label>Start Date</label><input className="inp" type="date" value={form.start_date} onChange={setF('start_date')} /></div>
-              <div className="field"><label>End Date</label><input className="inp" type="date" value={form.end_date} onChange={setF('end_date')} /></div>
-            </div>
-            <div className="g2">
-              <div className="field"><label>Capacity</label><input className="inp" type="number" value={form.capacity} onChange={setF('capacity')} placeholder="Max students" /></div>
-              <div className="field"><label>Google Meet Link</label><input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." /></div>
+            <div className="modal-body">
+              <div className="field"><label>Batch Name *</label><input className="inp" value={form.name} onChange={setF('name')} placeholder="e.g. JEE 2026 Morning" /></div>
+              <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={setF('description')} placeholder="Brief description" rows={2}/></div>
+              <div className="g2">
+                <div className="field"><label>Start Date</label><input className="inp" type="date" value={form.start_date} onChange={setF('start_date')} /></div>
+                <div className="field"><label>End Date</label><input className="inp" type="date" value={form.end_date} onChange={setF('end_date')} /></div>
+              </div>
+              <div className="g2">
+                <div className="field"><label>Capacity</label><input className="inp" type="number" value={form.capacity} onChange={setF('capacity')} placeholder="Max students" /></div>
+                <div className="field"><label>Google Meet Link</label><input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." /></div>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>

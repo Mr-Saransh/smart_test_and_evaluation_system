@@ -128,44 +128,46 @@ export function StudyMaterials() {
               <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
             </div>
             
-            <div className="field">
-              <label>Material Type *</label>
-              <div className="fx fw" style={{ gap: 8 }}>
-                {['document', 'video', 'link'].map(t => (
-                  <button 
-                    key={t} 
-                    className="btn bs" 
-                    style={{ flex: 1, textTransform: 'capitalize', background: form.type === t ? 'var(--color-primary)' : '', color: form.type === t ? '#fff' : '', borderColor: form.type === t ? 'var(--color-primary)' : '' }}
-                    onClick={() => setForm({ ...form, type: t, url: '' })}
-                  >
-                    {typeIcons[t]} {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Assign to Batch *</label>
-              <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                <option value="">Select Batch</option>
-                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
-
-            <div className="field"><label>Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Chapter 1 Notes" /></div>
-            <div className="field"><label>Subject</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
-
-            {form.type === 'document' ? (
+            <div className="modal-body">
               <div className="field">
-                <label>File Upload (PDF, DOCX, ZIP) *</label>
-                <input className="inp" type="file" onChange={e => setFile(e.target.files[0])} accept=".pdf,.doc,.docx,.zip,.jpg,.png" />
+                <label>Material Type *</label>
+                <div className="fx fw" style={{ gap: 8 }}>
+                  {['document', 'video', 'link'].map(t => (
+                    <button 
+                      key={t} 
+                      className="btn bs" 
+                      style={{ flex: 1, textTransform: 'capitalize', background: form.type === t ? 'var(--color-primary)' : '', color: form.type === t ? '#fff' : '', borderColor: form.type === t ? 'var(--color-primary)' : '' }}
+                      onClick={() => setForm({ ...form, type: t, url: '' })}
+                    >
+                      {typeIcons[t]} {t}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ) : (
+
               <div className="field">
-                <label>{form.type === 'video' ? 'Video URL (YouTube, Drive)' : 'Web URL'} *</label>
-                <input className="inp" value={form.url} onChange={setF('url')} placeholder="https://..." />
+                <label>Assign to Batch *</label>
+                <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+                  <option value="">Select Batch</option>
+                  {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
               </div>
-            )}
+
+              <div className="field"><label>Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Chapter 1 Notes" /></div>
+              <div className="field"><label>Subject</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
+
+              {form.type === 'document' ? (
+                <div className="field">
+                  <label>File Upload (PDF, DOCX, ZIP) *</label>
+                  <input className="inp" type="file" onChange={e => setFile(e.target.files[0])} accept=".pdf,.doc,.docx,.zip,.jpg,.png" />
+                </div>
+              ) : (
+                <div className="field">
+                  <label>{form.type === 'video' ? 'Video URL (YouTube, Drive)' : 'Web URL'} *</label>
+                  <input className="inp" value={form.url} onChange={setF('url')} placeholder="https://..." />
+                </div>
+              )}
+            </div>
 
             <div className="modal-footer">
               <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>

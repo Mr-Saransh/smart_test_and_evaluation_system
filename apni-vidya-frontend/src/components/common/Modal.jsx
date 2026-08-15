@@ -1,58 +1,47 @@
 import React from "react";
 import { CloseIcon } from "./Icons";
 
-export function Modal({ isOpen, onClose, title, children, maxWidth = 420 }) {
+/**
+ * Modal — viewport-safe dialog with scrollable body and sticky footer.
+ *
+ * Props:
+ *  - isOpen:   boolean
+ *  - onClose:  () => void
+ *  - title:    string (optional)
+ *  - children: modal body content (scrollable)
+ *  - footer:   ReactNode (optional, renders in a sticky footer below body)
+ *  - maxWidth: number|string (default 520)
+ *  - className: extra className on .modal-content (e.g. "modal-lg")
+ */
+export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 520, className = "" }) {
   if (!isOpen) return null;
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15,23,42,0.45)",
-        backdropFilter: "blur(2px)",
-        zIndex: 9998,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16
-      }}
-      onClick={onClose}
-    >
+    <div className="modal-overlay" onClick={onClose}>
       <div
-        className="card animate-modal"
-        style={{
-          maxWidth,
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          position: "relative"
-        }}
+        className={`modal-content ${className}`}
+        style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="fx" style={{ justifyContent: "space-between", marginBottom: 14 }}>
-            <h3 className="h2" style={{ marginBottom: 0 }}>
-              {title}
-            </h3>
+          <div className="modal-header">
+            <h3 className="modal-title">{title}</h3>
             <button
+              className="modal-close"
               onClick={onClose}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#64748B",
-                cursor: "pointer",
-                padding: 4,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
               aria-label="Close dialog"
             >
-              <CloseIcon size={18} color="#64748B" />
+              <CloseIcon size={18} />
             </button>
           </div>
         )}
-        {children}
+        <div className="modal-body">
+          {children}
+        </div>
+        {footer && (
+          <div className="modal-footer">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
