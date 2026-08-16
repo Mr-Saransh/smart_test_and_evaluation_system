@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, PUT, DEL, toast } from '../../utils/api';
 import { BuildingIcon, UsersIcon, TrendingUpIcon, CurrencyIcon, UserCheckIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { SkeletonCard, SkeletonTable } from '../../components/common/Skeleton';
 import { formatDate, formatCurrency, getScoreColor, getAttendanceColor } from '../../utils/helpers';
 
@@ -225,32 +226,48 @@ export function Batches() {
         </div>
       )}
 
-      {show && (
-        <div className="modal-overlay" onClick={() => setShow(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? 'Edit Batch' : 'New Batch'}</h2>
-              <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="field"><label>Batch Name *</label><input className="inp" value={form.name} onChange={setF('name')} placeholder="e.g. JEE 2026 Morning" /></div>
-              <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={setF('description')} placeholder="Brief description" rows={2}/></div>
-              <div className="g2">
-                <div className="field"><label>Start Date</label><input className="inp" type="date" value={form.start_date} onChange={setF('start_date')} /></div>
-                <div className="field"><label>End Date</label><input className="inp" type="date" value={form.end_date} onChange={setF('end_date')} /></div>
-              </div>
-              <div className="g2">
-                <div className="field"><label>Capacity</label><input className="inp" type="number" value={form.capacity} onChange={setF('capacity')} placeholder="Max students" /></div>
-                <div className="field"><label>Google Meet Link</label><input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." /></div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
-              <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</button>
-            </div>
+      <Modal
+        isOpen={show}
+        onClose={() => setShow(false)}
+        title={editing ? 'Edit Batch' : 'New Batch'}
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
+            <button className="btn bp" onClick={save} disabled={saving}>
+              {saving ? 'Saving...' : editing ? 'Update Batch' : 'Create Batch'}
+            </button>
+          </>
+        }
+      >
+        <div className="field">
+          <label>Batch Name *</label>
+          <input className="inp" value={form.name} onChange={setF('name')} placeholder="e.g. JEE 2026 Morning" autoFocus />
+        </div>
+        <div className="field">
+          <label>Description</label>
+          <textarea className="inp" value={form.description} onChange={setF('description')} placeholder="Brief description" rows={2}/>
+        </div>
+        <div className="g2">
+          <div className="field">
+            <label>Start Date</label>
+            <input className="inp" type="date" value={form.start_date} onChange={setF('start_date')} />
+          </div>
+          <div className="field">
+            <label>End Date</label>
+            <input className="inp" type="date" value={form.end_date} onChange={setF('end_date')} />
           </div>
         </div>
-      )}
+        <div className="g2">
+          <div className="field">
+            <label>Capacity</label>
+            <input className="inp" type="number" value={form.capacity} onChange={setF('capacity')} placeholder="Max students" />
+          </div>
+          <div className="field">
+            <label>Google Meet Link</label>
+            <input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

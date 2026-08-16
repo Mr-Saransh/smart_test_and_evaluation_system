@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, PUT, DEL, toast } from '../../utils/api';
 import { UserCheckIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { getInitials } from '../../utils/helpers';
 
 export function Teachers() {
@@ -85,31 +86,45 @@ export function Teachers() {
         </div>
       )}
 
-      {show && (
-        <div className="modal-overlay" onClick={() => setShow(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? 'Edit Teacher' : 'New Teacher'}</h2>
-              <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="field"><label>Full Name *</label><input className="inp" value={form.full_name} onChange={set('full_name')} placeholder="Teacher name" /></div>
-              <div className="g2">
-                <div className="field"><label>Phone Number *</label><input className="inp" type="tel" value={form.phone} onChange={set('phone')} placeholder="10-digit number" /></div>
-                <div className="field"><label>Email (Optional)</label><input className="inp" type="email" value={form.email} onChange={set('email')} placeholder="Email address" /></div>
-              </div>
-              <div className="g2">
-                <div className="field"><label>Subject / Role</label><input className="inp" value={form.subject} onChange={set('subject')} placeholder="e.g. Physics" /></div>
-                <div className="field"><label>{editing ? 'New Password (Optional)' : 'Password *'}</label><input className="inp" type="password" value={form.password} onChange={set('password')} placeholder="Min 8 chars" /></div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
-              <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</button>
-            </div>
+      {/* Modal */}
+      <Modal
+        isOpen={show}
+        onClose={() => setShow(false)}
+        title={editing ? 'Edit Teacher' : 'New Teacher'}
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
+            <button className="btn bp" onClick={save} disabled={saving}>
+              {saving ? 'Saving...' : editing ? 'Update Teacher' : 'Create Teacher'}
+            </button>
+          </>
+        }
+      >
+        <div className="field">
+          <label>Full Name *</label>
+          <input className="inp" value={form.full_name} onChange={set('full_name')} placeholder="Teacher name" autoFocus />
+        </div>
+        <div className="g2">
+          <div className="field">
+            <label>Phone Number *</label>
+            <input className="inp" type="tel" value={form.phone} onChange={set('phone')} placeholder="10-digit number" />
+          </div>
+          <div className="field">
+            <label>Email (Optional)</label>
+            <input className="inp" type="email" value={form.email} onChange={set('email')} placeholder="Email address" />
           </div>
         </div>
-      )}
+        <div className="g2">
+          <div className="field">
+            <label>Subject / Role</label>
+            <input className="inp" value={form.subject} onChange={set('subject')} placeholder="e.g. Physics" />
+          </div>
+          <div className="field">
+            <label>{editing ? 'New Password (Optional)' : 'Password *'}</label>
+            <input className="inp" type="password" value={form.password} onChange={set('password')} placeholder="Min 8 chars" />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

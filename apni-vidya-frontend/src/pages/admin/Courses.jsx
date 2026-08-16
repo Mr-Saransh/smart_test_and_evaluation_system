@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, PUT, DEL, toast } from '../../utils/api';
 import { BookOpenIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { formatCurrency } from '../../utils/helpers';
 
 export function Courses() {
@@ -84,28 +85,38 @@ export function Courses() {
       )}
 
       {/* Modal */}
-      {show && (
-        <div className="modal-overlay" onClick={() => setShow(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? 'Edit Course' : 'New Course'}</h2>
-              <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="field"><label>Course Name *</label><input className="inp" value={form.name} onChange={set('name')} placeholder="e.g. JEE Advanced 2026" /></div>
-              <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={set('description')} placeholder="Brief description" /></div>
-              <div className="g2">
-                <div className="field"><label>Fee Amount (₹)</label><input className="inp" type="number" value={form.fee_amount} onChange={set('fee_amount')} placeholder="0" /></div>
-                <div className="field"><label>Duration (days)</label><input className="inp" type="number" value={form.duration_days} onChange={set('duration_days')} placeholder="365" /></div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
-              <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</button>
-            </div>
+      <Modal
+        isOpen={show}
+        onClose={() => setShow(false)}
+        title={editing ? 'Edit Course' : 'New Course'}
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
+            <button className="btn bp" onClick={save} disabled={saving}>
+              {saving ? 'Saving...' : editing ? 'Update Course' : 'Create Course'}
+            </button>
+          </>
+        }
+      >
+        <div className="field">
+          <label>Course Name *</label>
+          <input className="inp" value={form.name} onChange={set('name')} placeholder="e.g. JEE Advanced 2026" autoFocus />
+        </div>
+        <div className="field">
+          <label>Description</label>
+          <textarea className="inp" value={form.description} onChange={set('description')} placeholder="Brief description" rows={2} />
+        </div>
+        <div className="g2">
+          <div className="field">
+            <label>Fee Amount (₹)</label>
+            <input className="inp" type="number" value={form.fee_amount} onChange={set('fee_amount')} placeholder="0" />
+          </div>
+          <div className="field">
+            <label>Duration (days)</label>
+            <input className="inp" type="number" value={form.duration_days} onChange={set('duration_days')} placeholder="365" />
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

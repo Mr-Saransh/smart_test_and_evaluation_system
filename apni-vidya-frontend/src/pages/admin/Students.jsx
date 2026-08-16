@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, PUT, DEL, toast, POST } from '../../utils/api';
 import { UsersIcon, SearchIcon, CopyIcon, CheckCircleIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { SkeletonTable, SkeletonCard } from '../../components/common/Skeleton';
 import { getInitials, formatDate } from '../../utils/helpers';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -179,96 +180,88 @@ export function Students() {
         </div>
       </div>
 
-      {show && (
-        <div className="modal-overlay" onClick={() => setShow(false)}>
-          <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? 'Edit Student' : 'Onboard New Student'}</h2>
-              <button className="btn-icon" onClick={() => setShow(false)}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div style={{ padding: '12px 16px', background: 'var(--color-primary-bg)', borderRadius: 8, marginBottom: 24, border: '1px solid var(--color-primary-light)' }}>
-                <span style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500 }}>
-                  💡 {editing ? 'Editing details will not change their password.' : 'System will automatically generate secure login credentials for the student and parent upon creation.'}
-                </span>
-              </div>
-
-              <div className="g2" style={{ marginBottom: 16 }}>
-                <div className="field">
-                  <label>Assign to Batch *</label>
-                  <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                    <option value="">— Select Batch —</option>
-                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-                <div className="field"><label>Roll Number (Optional)</label><input className="inp" value={form.roll_number} onChange={setF('roll_number')} placeholder="e.g. 101" /></div>
-              </div>
-
-              <h3 className="h4" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--border-color)' }}>Student Details</h3>
-              <div className="g3" style={{ marginBottom: 24 }}>
-                <div className="field"><label>Full Name *</label><input className="inp" value={form.full_name} onChange={setF('full_name')} placeholder="Student name" /></div>
-                <div className="field"><label>Phone Number *</label><input className="inp" type="tel" value={form.phone} onChange={setF('phone')} placeholder="10-digit number" /></div>
-                <div className="field"><label>Email Address</label><input className="inp" type="email" value={form.email} onChange={setF('email')} placeholder="student@example.com" /></div>
-              </div>
-
-              <h3 className="h4" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--border-color)' }}>Parent/Guardian Details</h3>
-              <div className="g2">
-                <div className="field"><label>Parent Name</label><input className="inp" value={form.parent_name} onChange={setF('parent_name')} placeholder="Parent name" /></div>
-                <div className="field"><label>Parent Phone</label><input className="inp" type="tel" value={form.parent_phone} onChange={setF('parent_phone')} placeholder="10-digit number (creates parent login)" /></div>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
-              <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : editing ? 'Update' : 'Generate & Create'}</button>
-            </div>
-          </div>
+      {/* Onboard / Edit Student Modal */}
+      <Modal
+        isOpen={show}
+        onClose={() => setShow(false)}
+        title={editing ? 'Edit Student' : 'Onboard New Student'}
+        className="modal-lg"
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
+            <button className="btn bp" onClick={save} disabled={saving}>
+              {saving ? 'Saving...' : editing ? 'Update Student' : 'Generate & Create'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ padding: '12px 16px', background: 'var(--color-primary-bg)', borderRadius: 8, marginBottom: 24, border: '1px solid var(--color-primary-light)' }}>
+          <span style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500 }}>
+            💡 {editing ? 'Editing details will not change their password.' : 'System will automatically generate secure login credentials for the student and parent upon creation.'}
+          </span>
         </div>
-      )}
+
+        <div className="g2" style={{ marginBottom: 16 }}>
+          <div className="field">
+            <label>Assign to Batch *</label>
+            <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+              <option value="">— Select Batch —</option>
+              {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Roll Number (Optional)</label><input className="inp" value={form.roll_number} onChange={setF('roll_number')} placeholder="e.g. 101" /></div>
+        </div>
+
+        <h3 className="h4" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--border-color)' }}>Student Details</h3>
+        <div className="g3" style={{ marginBottom: 24 }}>
+          <div className="field"><label>Full Name *</label><input className="inp" value={form.full_name} onChange={setF('full_name')} placeholder="Student name" autoFocus /></div>
+          <div className="field"><label>Phone Number *</label><input className="inp" type="tel" value={form.phone} onChange={setF('phone')} placeholder="10-digit number" /></div>
+          <div className="field"><label>Email Address</label><input className="inp" type="email" value={form.email} onChange={setF('email')} placeholder="student@example.com" /></div>
+        </div>
+
+        <h3 className="h4" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--border-color)' }}>Parent/Guardian Details</h3>
+        <div className="g2">
+          <div className="field"><label>Parent Name</label><input className="inp" value={form.parent_name} onChange={setF('parent_name')} placeholder="Parent name" /></div>
+          <div className="field"><label>Parent Phone</label><input className="inp" type="tel" value={form.parent_phone} onChange={setF('parent_phone')} placeholder="10-digit number (creates parent login)" /></div>
+        </div>
+      </Modal>
 
       {/* Generated Credentials Modal */}
-      {showCreds && creds && (
-        <div className="modal-overlay" onClick={() => setShowCreds(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
-            <div className="modal-header">
-              <h2>Credentials</h2>
-              <button className="btn-icon" onClick={() => setShowCreds(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ width: 64, height: 64, background: 'var(--color-success-bg)', color: 'var(--color-success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-                  <CheckCircleIcon size={32} />
-                </div>
-                <h2 className="h2">Student Onboarded!</h2>
-                <p className="muted" style={{ fontSize: 14 }}>Credentials generated successfully. Share these with the student.</p>
-              </div>
-
-              <div style={{ background: 'var(--bg-secondary)', padding: 16, borderRadius: 8, marginBottom: 24, border: '1px solid var(--border-color)', position: 'relative' }}>
-                <button className="btn bs bsm" onClick={copyCreds} style={{ position: 'absolute', top: 12, right: 12 }}>
-                  {copied ? 'Copied!' : <><CopyIcon size={14} style={{ marginRight: 6 }}/> Copy All</>}
-                </button>
-
-                <h3 className="h4" style={{ marginBottom: 12 }}>🧑‍🎓 Student Login</h3>
-                <div className="fxb" style={{ marginBottom: 8 }}><span className="muted">Phone / Username:</span><strong style={{ userSelect: 'all' }}>{creds.credentials.student.phone}</strong></div>
-                <div className="fxb" style={{ marginBottom: 16 }}><span className="muted">Temporary Password:</span><strong style={{ userSelect: 'all', color: 'var(--color-primary)' }}>{creds.credentials.student.temp_password}</strong></div>
-
-                {creds.credentials.parent && (
-                  <>
-                    <h3 className="h4" style={{ marginBottom: 12, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>👨‍👩‍👧 Parent Login</h3>
-                    <div className="fxb" style={{ marginBottom: 8 }}><span className="muted">Phone / Username:</span><strong style={{ userSelect: 'all' }}>{creds.credentials.parent.phone}</strong></div>
-                    <div className="fxb"><span className="muted">Temporary Password:</span><strong style={{ userSelect: 'all', color: 'var(--color-primary)' }}>{creds.credentials.parent.temp_password}</strong></div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn bp w-full" style={{ justifyContent: 'center' }} onClick={() => setShowCreds(false)}>Done</button>
-            </div>
+      <Modal
+        isOpen={Boolean(showCreds && creds)}
+        onClose={() => setShowCreds(false)}
+        title="Credentials"
+        maxWidth={450}
+        footer={
+          <button className="btn bp w-full" style={{ justifyContent: 'center' }} onClick={() => setShowCreds(false)}>Done</button>
+        }
+      >
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ width: 64, height: 64, background: 'var(--color-success-bg)', color: 'var(--color-success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+            <CheckCircleIcon size={32} />
           </div>
+          <h2 className="h2">Student Onboarded!</h2>
+          <p className="muted" style={{ fontSize: 14 }}>Credentials generated successfully. Share these with the student.</p>
         </div>
-      )}
+
+        <div style={{ background: 'var(--bg-secondary)', padding: 16, borderRadius: 8, marginBottom: 8, border: '1px solid var(--border-color)', position: 'relative' }}>
+          <button className="btn bs bsm" onClick={copyCreds} style={{ position: 'absolute', top: 12, right: 12 }}>
+            {copied ? 'Copied!' : <><CopyIcon size={14} style={{ marginRight: 6 }}/> Copy All</>}
+          </button>
+
+          <h3 className="h4" style={{ marginBottom: 12 }}>🧑‍🎓 Student Login</h3>
+          <div className="fxb" style={{ marginBottom: 8 }}><span className="muted">Phone / Username:</span><strong style={{ userSelect: 'all' }}>{creds?.credentials?.student?.phone}</strong></div>
+          <div className="fxb" style={{ marginBottom: 16 }}><span className="muted">Temporary Password:</span><strong style={{ userSelect: 'all', color: 'var(--color-primary)' }}>{creds?.credentials?.student?.temp_password}</strong></div>
+
+          {creds?.credentials?.parent && (
+            <>
+              <h3 className="h4" style={{ marginBottom: 12, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>👨‍👩‍👧 Parent Login</h3>
+              <div className="fxb" style={{ marginBottom: 8 }}><span className="muted">Phone / Username:</span><strong style={{ userSelect: 'all' }}>{creds?.credentials?.parent?.phone}</strong></div>
+              <div className="fxb"><span className="muted">Temporary Password:</span><strong style={{ userSelect: 'all', color: 'var(--color-primary)' }}>{creds?.credentials?.parent?.temp_password}</strong></div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

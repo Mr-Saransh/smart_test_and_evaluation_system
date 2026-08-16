@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, DEL, toast } from '../../utils/api';
 import { CalendarIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { formatDate } from '../../utils/helpers';
 import { SkeletonCard } from '../../components/common/Skeleton';
 
@@ -193,44 +194,40 @@ export function Planner() {
         </div>
       )}
 
-      {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Add Plan Item</h2>
-              <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="g2">
-                <div className="field">
-                  <label>Type *</label>
-                  <select className="sel w-full" value={form.type} onChange={setF('type')}>
-                    <option value="lecture">Lecture / Topic</option>
-                    <option value="test">Test / Exam</option>
-                    <option value="event">Event / Activity</option>
-                    <option value="holiday">Holiday</option>
-                  </select>
-                </div>
-                <div className="field"><label>Due Date / Date *</label><input className="inp" type="date" value={form.due_date} onChange={setF('due_date')} /></div>
-              </div>
-
-              <div className="g2">
-                <div className="field"><label>Subject (Optional)</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
-                <div className="field"><label>Material Link (Optional)</label><input className="inp" value={form.link} onChange={setF('link')} placeholder="https://..." /></div>
-              </div>
-
-              <div className="field"><label>Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Chapter 1: Kinematics" /></div>
-              <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={setF('description')} placeholder="Notes, homework instructions, or syllabus details" rows={3} /></div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn bp" onClick={saveItem} disabled={saving}>{saving ? 'Saving...' : 'Add Item'}</button>
-            </div>
+      <Modal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Add Plan Item"
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="btn bp" onClick={saveItem} disabled={saving}>
+              {saving ? 'Saving...' : 'Add Item'}
+            </button>
+          </>
+        }
+      >
+        <div className="g2">
+          <div className="field">
+            <label>Type *</label>
+            <select className="sel w-full" value={form.type} onChange={setF('type')}>
+              <option value="lecture">Lecture / Topic</option>
+              <option value="test">Test / Exam</option>
+              <option value="event">Event / Activity</option>
+              <option value="holiday">Holiday</option>
+            </select>
           </div>
+          <div className="field"><label>Due Date / Date *</label><input className="inp" type="date" value={form.due_date} onChange={setF('due_date')} /></div>
         </div>
-      )}
+
+        <div className="g2">
+          <div className="field"><label>Subject (Optional)</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
+          <div className="field"><label>Material Link (Optional)</label><input className="inp" value={form.link} onChange={setF('link')} placeholder="https://..." /></div>
+        </div>
+
+        <div className="field"><label>Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Chapter 1: Kinematics" autoFocus /></div>
+        <div className="field"><label>Description</label><textarea className="inp" value={form.description} onChange={setF('description')} placeholder="Notes, homework instructions, or syllabus details" rows={3} /></div>
+      </Modal>
     </div>
   );
 }

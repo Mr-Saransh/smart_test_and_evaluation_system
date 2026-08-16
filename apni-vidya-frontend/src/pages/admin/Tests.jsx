@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, toast } from '../../utils/api';
 import { FileTextIcon, TrendingUpIcon, UsersIcon, CheckCircleIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { SkeletonTable, SkeletonCard } from '../../components/common/Skeleton';
 import { getScoreColor } from '../../utils/helpers';
 
@@ -330,99 +331,94 @@ export function Tests() {
       )}
 
       {/* Create Modal */}
-      {showCreate && (
-        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="modal-content modal-xl" onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', height: '90vh' }}>
-            <div className="modal-header" style={{ flexShrink: 0 }}>
-              <h2>Create New Test</h2>
-              <button className="btn-icon" onClick={() => setShowCreate(false)}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
-                <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Test Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Physics Mock Test 1" /></div>
-                <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Assign Batch *</label>
-                  <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                    <option value="" disabled>Select Batch</option>
-                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-                <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Duration (mins)</label><input className="inp" type="number" value={form.duration_min} onChange={setF('duration_min')} /></div>
-              </div>
+      <Modal
+        isOpen={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Create New Test"
+        className="modal-xl"
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShowCreate(false)}>Cancel</button>
+            <button className="btn bp" onClick={createTest} disabled={saving}>
+              {saving ? 'Processing...' : 'Save & Launch Test'}
+            </button>
+          </>
+        }
+      >
+        <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
+          <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Test Title *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Physics Mock Test 1" autoFocus /></div>
+          <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Assign Batch *</label>
+            <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+              <option value="" disabled>Select Batch</option>
+              {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+          <div className="field" style={{ flex: 1, minWidth: 150 }}><label>Duration (mins)</label><input className="inp" type="number" value={form.duration_min} onChange={setF('duration_min')} /></div>
+        </div>
 
-              <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
-                <div className="field" style={{ flex: 1 }}><label>Subject</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
-                <div className="field" style={{ flex: 1 }}><label>Chapter</label><input className="inp" value={form.chapter} onChange={setF('chapter')} placeholder="e.g. Mechanics" /></div>
-                <div className="field" style={{ flex: 1 }}><label>Difficulty</label>
-                  <select className="sel w-full" value={form.difficulty} onChange={setF('difficulty')}>
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-                <div className="field" style={{ flex: 1 }}><label>Total Marks</label><input className="inp" type="number" value={form.total_marks} onChange={setF('total_marks')} /></div>
-              </div>
+        <div className="fx fw" style={{ gap: 16, marginBottom: 16 }}>
+          <div className="field" style={{ flex: 1 }}><label>Subject</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
+          <div className="field" style={{ flex: 1 }}><label>Chapter</label><input className="inp" value={form.chapter} onChange={setF('chapter')} placeholder="e.g. Mechanics" /></div>
+          <div className="field" style={{ flex: 1 }}><label>Difficulty</label>
+            <select className="sel w-full" value={form.difficulty} onChange={setF('difficulty')}>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div className="field" style={{ flex: 1 }}><label>Total Marks</label><input className="inp" type="number" value={form.total_marks} onChange={setF('total_marks')} /></div>
+        </div>
 
-              <div className="fx fw" style={{ gap: 16, marginBottom: 24 }}>
-                <div className="field" style={{ flex: 1 }}><label>Start Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.start_date} onChange={setF('start_date')} /></div>
-                <div className="field" style={{ flex: 1 }}><label>End Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.end_date} onChange={setF('end_date')} /></div>
-                <div className="field" style={{ flex: 1 }}><label>Attempt Limit</label><input className="inp" type="number" min="1" value={form.attempt_limit} onChange={setF('attempt_limit')} /></div>
-              </div>
+        <div className="fx fw" style={{ gap: 16, marginBottom: 24 }}>
+          <div className="field" style={{ flex: 1 }}><label>Start Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.start_date} onChange={setF('start_date')} /></div>
+          <div className="field" style={{ flex: 1 }}><label>End Date & Time (Optional)</label><input className="inp" type="datetime-local" value={form.end_date} onChange={setF('end_date')} /></div>
+          <div className="field" style={{ flex: 1 }}><label>Attempt Limit</label><input className="inp" type="number" min="1" value={form.attempt_limit} onChange={setF('attempt_limit')} /></div>
+        </div>
 
-              <div style={{ marginBottom: 16 }}>
-                <h3 className="h3" style={{ marginBottom: 8 }}>Questions Source</h3>
-                <div className="fx" style={{ gap: 16 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input type="radio" checked={inputType === 'pdf'} onChange={() => setInputType('pdf')} />
-                    Upload PDF Document
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input type="radio" checked={inputType === 'text'} onChange={() => setInputType('text')} />
-                    Paste Raw Text
-                  </label>
-                </div>
-              </div>
-
-              {inputType === 'pdf' ? (
-                <div className="card" style={{ borderStyle: 'dashed', textAlign: 'center', padding: 40 }}>
-                  <FileTextIcon size={48} color="var(--text-tertiary)" style={{ marginBottom: 16 }} />
-                  <h3 className="h3" style={{ marginBottom: 8 }}>Upload Test Document</h3>
-                  <p className="muted" style={{ marginBottom: 24, fontSize: 14 }}>Upload a PDF containing questions formatted like:<br/>"1. Question text?<br/>A) Option 1<br/>B) Option 2<br/>Ans: A"</p>
-                  <input 
-                    type="file" 
-                    accept=".pdf" 
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    id="pdf-upload"
-                  />
-                  <label htmlFor="pdf-upload" className="btn bs" style={{ display: 'inline-flex', cursor: 'pointer' }}>Select PDF File</label>
-                  <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    {fileInputRef.current?.files?.[0]?.name}
-                  </div>
-                </div>
-              ) : (
-                <div className="field" style={{ height: 200, display: 'flex', flexDirection: 'column' }}>
-                  <label>Paste Text Content</label>
-                  <textarea 
-                    className="inp" 
-                    style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, resize: 'none' }} 
-                    placeholder={"1. What is the capital of France?\nA) London\nB) Paris\nC) Berlin\nD) Madrid\nAns: B"}
-                    value={rawText}
-                    onChange={e => setRawText(e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn bd" onClick={() => setShowCreate(false)}>Cancel</button>
-              <button className="btn bp" onClick={createTest} disabled={saving}>
-                {saving ? 'Processing...' : 'Save & Launch Test'}
-              </button>
-            </div>
+        <div style={{ marginBottom: 16 }}>
+          <h3 className="h3" style={{ marginBottom: 8 }}>Questions Source</h3>
+          <div className="fx" style={{ gap: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="radio" checked={inputType === 'pdf'} onChange={() => setInputType('pdf')} />
+              Upload PDF Document
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="radio" checked={inputType === 'text'} onChange={() => setInputType('text')} />
+              Paste Raw Text
+            </label>
           </div>
         </div>
-      )}
+
+        {inputType === 'pdf' ? (
+          <div className="card" style={{ borderStyle: 'dashed', textAlign: 'center', padding: 40 }}>
+            <FileTextIcon size={48} color="var(--text-tertiary)" style={{ marginBottom: 16 }} />
+            <h3 className="h3" style={{ marginBottom: 8 }}>Upload Test Document</h3>
+            <p className="muted" style={{ marginBottom: 24, fontSize: 14 }}>Upload a PDF containing questions formatted like:<br/>"1. Question text?<br/>A) Option 1<br/>B) Option 2<br/>Ans: A"</p>
+            <input 
+              type="file" 
+              accept=".pdf" 
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              id="pdf-upload"
+            />
+            <label htmlFor="pdf-upload" className="btn bs" style={{ display: 'inline-flex', cursor: 'pointer' }}>Select PDF File</label>
+            <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+              {fileInputRef.current?.files?.[0]?.name}
+            </div>
+          </div>
+        ) : (
+          <div className="field" style={{ height: 200, display: 'flex', flexDirection: 'column' }}>
+            <label>Paste Text Content</label>
+            <textarea 
+              className="inp" 
+              style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, resize: 'none' }} 
+              placeholder={"1. What is the capital of France?\nA) London\nB) Paris\nC) Berlin\nD) Madrid\nAns: B"}
+              value={rawText}
+              onChange={e => setRawText(e.target.value)}
+            />
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

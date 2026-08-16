@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, DEL, toast } from '../../utils/api';
 import { MegaphoneIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { SkeletonTable } from '../../components/common/Skeleton';
 import { formatDate } from '../../utils/helpers';
 
@@ -100,44 +101,40 @@ export function Announcements() {
         </div>
       </div>
 
-      {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>New Announcement</h2>
-              <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="field">
-                <label>Audience *</label>
-                <select className="sel w-full" value={form.audience} onChange={setF('audience')}>
-                  <option value="all">All Students</option>
-                  <option value="batch">Specific Batch</option>
-                </select>
-              </div>
-
-              {form.audience === 'batch' && (
-                <div className="field animate-fade-in">
-                  <label>Select Batch *</label>
-                  <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
-                    <option value="">Choose Batch...</option>
-                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              <div className="field"><label>Title / Subject *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Holiday on Friday" /></div>
-              <div className="field"><label>Message *</label><textarea className="inp" style={{ height: 120 }} value={form.body} onChange={setF('body')} placeholder="Detailed message content..." /></div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Broadcasting...' : 'Broadcast Now'}</button>
-            </div>
-          </div>
+      <Modal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="New Announcement"
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="btn bp" onClick={save} disabled={saving}>
+              {saving ? 'Broadcasting...' : 'Broadcast Now'}
+            </button>
+          </>
+        }
+      >
+        <div className="field">
+          <label>Audience *</label>
+          <select className="sel w-full" value={form.audience} onChange={setF('audience')}>
+            <option value="all">All Students</option>
+            <option value="batch">Specific Batch</option>
+          </select>
         </div>
-      )}
+
+        {form.audience === 'batch' && (
+          <div className="field animate-fade-in">
+            <label>Select Batch *</label>
+            <select className="sel w-full" value={form.batch_id} onChange={setF('batch_id')}>
+              <option value="">Choose Batch...</option>
+              {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        <div className="field"><label>Title / Subject *</label><input className="inp" value={form.title} onChange={setF('title')} placeholder="e.g. Holiday on Friday" autoFocus /></div>
+        <div className="field"><label>Message *</label><textarea className="inp" style={{ height: 120 }} value={form.body} onChange={setF('body')} placeholder="Detailed message content..." /></div>
+      </Modal>
     </div>
   );
 }

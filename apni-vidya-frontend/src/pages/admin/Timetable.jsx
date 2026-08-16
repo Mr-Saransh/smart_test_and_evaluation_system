@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GET, POST, DEL, toast } from '../../utils/api';
 import { CalendarIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 import { TT_DAYS, getSubjectColor } from '../../utils/constants';
 import { formatTime, getMondayBasedDayIndex } from '../../utils/helpers';
 import { SkeletonCard } from '../../components/common/Skeleton';
@@ -229,48 +230,44 @@ export function Timetable() {
         </div>
       )}
 
-      {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Add Class Slot</h2>
-              <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="field">
-                <label>Day of Week *</label>
-                <select className="sel w-full" value={form.day_of_week} onChange={setF('day_of_week')}>
-                  {TT_DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
-                </select>
-              </div>
-
-              <div className="g2">
-                <div className="field"><label>Start Time *</label><input className="inp" type="time" value={form.start_time} onChange={setF('start_time')} /></div>
-                <div className="field"><label>End Time *</label><input className="inp" type="time" value={form.end_time} onChange={setF('end_time')} /></div>
-              </div>
-
-              <div className="field"><label>Subject *</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" /></div>
-
-              <div className="g2">
-                <div className="field">
-                  <label>Teacher (Optional)</label>
-                  <select className="sel w-full" value={form.teacher_id} onChange={setF('teacher_id')}>
-                    <option value="">— None —</option>
-                    {teachers.map(t => <option key={t.id} value={t.id}>{t.full_name}{t.subject ? ` (${t.subject})` : ''}</option>)}
-                  </select>
-                </div>
-                <div className="field"><label>Room (Optional)</label><input className="inp" value={form.room} onChange={setF('room')} placeholder="e.g. Room 101" /></div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn bp" onClick={saveSlot} disabled={saving}>{saving ? 'Saving...' : 'Add Slot'}</button>
-            </div>
-          </div>
+      <Modal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Add Class Slot"
+        footer={
+          <>
+            <button className="btn bs" onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="btn bp" onClick={saveSlot} disabled={saving}>
+              {saving ? 'Saving...' : 'Add Slot'}
+            </button>
+          </>
+        }
+      >
+        <div className="field">
+          <label>Day of Week *</label>
+          <select className="sel w-full" value={form.day_of_week} onChange={setF('day_of_week')}>
+            {TT_DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+          </select>
         </div>
-      )}
+
+        <div className="g2">
+          <div className="field"><label>Start Time *</label><input className="inp" type="time" value={form.start_time} onChange={setF('start_time')} /></div>
+          <div className="field"><label>End Time *</label><input className="inp" type="time" value={form.end_time} onChange={setF('end_time')} /></div>
+        </div>
+
+        <div className="field"><label>Subject *</label><input className="inp" value={form.subject} onChange={setF('subject')} placeholder="e.g. Physics" autoFocus /></div>
+
+        <div className="g2">
+          <div className="field">
+            <label>Teacher (Optional)</label>
+            <select className="sel w-full" value={form.teacher_id} onChange={setF('teacher_id')}>
+              <option value="">— None —</option>
+              {teachers.map(t => <option key={t.id} value={t.id}>{t.full_name}{t.subject ? ` (${t.subject})` : ''}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Room (Optional)</label><input className="inp" value={form.room} onChange={setF('room')} placeholder="e.g. Room 101" /></div>
+        </div>
+      </Modal>
     </div>
   );
 }

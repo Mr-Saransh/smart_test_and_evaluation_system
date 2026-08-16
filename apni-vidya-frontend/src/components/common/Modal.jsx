@@ -1,32 +1,65 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { CloseIcon } from "./Icons";
 
 /**
- * Modal — viewport-safe dialog with scrollable body and sticky footer.
+ * Modal — Viewport-safe, portalized dialog with scrollable body and sticky footer.
+ * Renders into document.body to escape any container stacking contexts or animations.
  *
  * Props:
- *  - isOpen:   boolean
- *  - onClose:  () => void
- *  - title:    string (optional)
- *  - children: modal body content (scrollable)
- *  - footer:   ReactNode (optional, renders in a sticky footer below body)
- *  - maxWidth: number|string (default 520)
- *  - className: extra className on .modal-content (e.g. "modal-lg")
+ *  - isOpen:    boolean
+ *  - onClose:   () => void
+ *  - title:     string (optional)
+ *  - children:  modal body content (scrollable)
+ *  - footer:    ReactNode (optional, renders in a sticky footer below body)
+ *  - maxWidth:  number|string (optional)
+ *  - className: extra className on .modal-content (e.g. "modal-lg", "modal-xl")
+ *  - style:     extra style object for .modal-content
  */
-export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 520, className = "" }) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+  maxWidth,
+  className = "",
+  style = {}
+}) {
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") onClose?.();
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
-  return (
+
+  const contentStyle = {
+    ...(maxWidth ? { maxWidth: typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth } : {}),
+    ...style
+  };
+
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
         className={`modal-content ${className}`}
-        style={{ maxWidth }}
+        style={contentStyle}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
           <div className="modal-header">
-            <h3 className="modal-title">{title}</h3>
+            <h2 className="modal-title">{title}</h2>
             <button
-              className="modal-close"
+              className="btn-icon modal-close"
               onClick={onClose}
               aria-label="Close dialog"
             >
@@ -43,7 +76,8 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 520
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
