@@ -17,6 +17,7 @@ import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ResetPassword } from './pages/auth/ResetPassword';
 import { ChangePassword } from './pages/auth/ChangePassword';
+import { ProfileSetup } from './pages/auth/ProfileSetup';
 
 // Admin / Teacher Pages
 const AdminOverview = lazy(() => import('./pages/admin/Overview').then(m => ({ default: m.Overview })));
@@ -77,6 +78,7 @@ export function AppRouter() {
       <Route path="/enroll/:slug" element={<EnrollmentForm />} />
       <Route path="/portfolio/:token" element={<Portfolio />} />
       <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+      <Route path="/setup-profile" element={<ProtectedRoute allowedRoles={['student']}><ProfileSetup /></ProtectedRoute>} />
       
       {/* Test Player (Full screen, no sidebar) */}
       <Route path="/play-test/:test_id" element={<ProtectedRoute allowedRoles={['student']}><Suspense fallback={<LoadingFallback />}><TestPlayer /></Suspense></ProtectedRoute>} />

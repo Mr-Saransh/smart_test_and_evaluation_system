@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../config/db');
 const { hasInstituteAccess } = require('../utils/access');
+const { sendCredentialsEmail } = require('../services/email');
 
 // Generate a random temporary password.
 function generateTempPassword(length = 8) {
@@ -20,8 +21,9 @@ async function list(req, res, next) {
       return res.status(403).json({ error: 'Not authorized for this institute' });
     }
     const result = await db.query(
-      `SELECT s.id, s.batch_id, s.roll_number, s.created_at,
+      `SELECT s.id, s.batch_id, s.roll_number, s.address, s.date_of_birth, s.created_at,
               u.id AS user_id, u.full_name, u.phone, u.email, u.is_active,
+              u.profile_completed,
               b.name AS batch_name,
               p.full_name AS parent_name, p.phone AS parent_phone
        FROM students s
@@ -118,6 +120,265 @@ async function create(req, res, next) {
   }
 }
 
+// Bulk admit students by email for a specific batch.
+// Accepts: { institute_id, batch_id, emails: string[] }
+// For each email: creates user + student record, sends credentials via email.
+async function bulkAdmit(req, res, next) {
+  const client = await db.getClient();
+  try {
+    const { institute_id, batch_id, emails } = req.body;
+
+    if (!institute_id || !batch_id || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ error: 'institute_id, batch_id, and a non-empty emails array are required' });
+    }
+    if (!(await hasInstituteAccess(req.user, institute_id, client))) {
+      client.release();
+      return res.status(403).json({ error: 'Not authorized for this institute' });
+    }
+
+    // Get institute name for the email
+    const instResult = await client.query('SELECT name FROM institutes WHERE id = $1', [institute_id]);
+    const instituteName = instResult.rows[0]?.name || 'Apni Vidya';
+
+    // Get login URL from env or use default
+    const loginUrl = process.env.FRONTEND_URL
+      ? `${process.env.FRONTEND_URL}/login`
+      : `${process.env.APP_URL || 'https://smart-test-and-evaluation-system.vercel.app'}/login`;
+
+    const results = [];
+    let created = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const rawEmail of emails) {
+      const email = (rawEmail || '').trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        results.push({ email: rawEmail, status: 'failed', reason: 'Invalid email format' });
+        failed++;
+        continue;
+      }
+
+      try {
+        await client.query('BEGIN');
+
+        // Check if user with this email already exists
+        const existingUser = await client.query(
+          'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+          [email]
+        );
+
+        if (existingUser.rows.length > 0) {
+          // Check if already a student in this institute
+          const existingStudent = await client.query(
+            'SELECT id FROM students WHERE user_id = $1 AND institute_id = $2',
+            [existingUser.rows[0].id, institute_id]
+          );
+          if (existingStudent.rows.length > 0) {
+            await client.query('ROLLBACK');
+            results.push({ email, status: 'skipped', reason: 'Already enrolled in this institute' });
+            skipped++;
+            continue;
+          }
+
+          // User exists but not enrolled here — create student record in this institute
+          await client.query(
+            `INSERT INTO students (user_id, institute_id, batch_id) VALUES ($1, $2, $3)`,
+            [existingUser.rows[0].id, institute_id, batch_id]
+          );
+          await client.query('COMMIT');
+          results.push({ email, status: 'skipped', reason: 'User exists, linked to this institute' });
+          skipped++;
+          continue;
+        }
+
+        // Generate temp password
+        const tempPassword = generateTempPassword();
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+        // Create user — use email as a placeholder for phone (will be set during profile setup)
+        // We generate a unique placeholder phone to satisfy the NOT NULL + UNIQUE constraint
+        const placeholderPhone = `TMP${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+        const userResult = await client.query(
+          `INSERT INTO users (phone, email, password_hash, role, full_name, must_reset_password, profile_completed)
+           VALUES ($1, $2, $3, 'student', $4, true, false)
+           RETURNING id`,
+          [placeholderPhone, email, passwordHash, email.split('@')[0]]
+        );
+
+        // Create student record
+        await client.query(
+          `INSERT INTO students (user_id, institute_id, batch_id) VALUES ($1, $2, $3)`,
+          [userResult.rows[0].id, institute_id, batch_id]
+        );
+
+        await client.query('COMMIT');
+
+        // Send email (fire-and-forget — don't block on failures)
+        sendCredentialsEmail({ to: email, password: tempPassword, instituteName, loginUrl })
+          .catch(err => console.error(`[bulk-admit] Email to ${email} failed:`, err.message));
+
+        results.push({ email, status: 'created', userId: userResult.rows[0].id });
+        created++;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`[bulk-admit] Error enrolling ${email}:`, err.message);
+        results.push({ email, status: 'failed', reason: err.message });
+        failed++;
+      }
+    }
+
+    client.release();
+
+    res.status(201).json({
+      summary: { total: emails.length, created, skipped, failed },
+      results,
+    });
+  } catch (err) {
+    client.release();
+    next(err);
+  }
+}
+
+// Student profile setup — called by students on first login after password change.
+async function profileSetup(req, res, next) {
+  const client = await db.getClient();
+  try {
+    const userId = req.user.id;
+    const { full_name, phone, address, date_of_birth, parent_name, parent_phone } = req.body;
+
+    if (!full_name || !phone) {
+      return res.status(400).json({ error: 'Full name and phone number are required' });
+    }
+
+    // Validate phone format
+    if (!/^(\+?91|0)?[6-9]\d{9}$/.test(phone.trim())) {
+      return res.status(400).json({ error: 'Enter a valid 10-digit mobile number' });
+    }
+
+    await client.query('BEGIN');
+
+    // Check if phone is already taken by another user
+    const phoneCheck = await client.query(
+      'SELECT id FROM users WHERE phone = $1 AND id != $2',
+      [phone.trim(), userId]
+    );
+    if (phoneCheck.rows.length > 0) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(409).json({ error: 'This phone number is already registered to another account' });
+    }
+
+    // Update user record
+    await client.query(
+      `UPDATE users SET full_name = $1, phone = $2, profile_completed = true, updated_at = now() WHERE id = $3`,
+      [full_name.trim(), phone.trim(), userId]
+    );
+
+    // Get student record
+    const studentRow = await client.query(
+      'SELECT id, institute_id FROM students WHERE user_id = $1',
+      [userId]
+    );
+
+    if (studentRow.rows.length > 0) {
+      const studentId = studentRow.rows[0].id;
+
+      // Update student details
+      await client.query(
+        `UPDATE students SET address = $1, date_of_birth = $2 WHERE id = $3`,
+        [address || null, date_of_birth || null, studentId]
+      );
+
+      // Create parent account if provided
+      if (parent_phone && /^(\+?91|0)?[6-9]\d{9}$/.test(parent_phone.trim())) {
+        const parentPassword = generateTempPassword();
+        const salt = await bcrypt.genSalt(10);
+        const parentHash = await bcrypt.hash(parentPassword, salt);
+
+        const parentUser = await client.query(
+          `INSERT INTO users (phone, password_hash, role, full_name, must_reset_password, profile_completed)
+           VALUES ($1, $2, 'parent', $3, true, true)
+           ON CONFLICT (phone) DO UPDATE SET full_name = EXCLUDED.full_name
+           RETURNING id`,
+          [parent_phone.trim(), parentHash, parent_name || `Parent of ${full_name}`]
+        );
+
+        await client.query(
+          'UPDATE students SET parent_user_id = $1 WHERE id = $2',
+          [parentUser.rows[0].id, studentId]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    client.release();
+
+    res.json({ message: 'Profile setup completed successfully', profile_completed: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
+    next(err);
+  }
+}
+
+// Profile status for admin — batch-wise breakdown of student profile completion.
+async function profileStatus(req, res, next) {
+  try {
+    const { institute_id } = req.params;
+    if (!(await hasInstituteAccess(req.user, institute_id))) {
+      return res.status(403).json({ error: 'Not authorized for this institute' });
+    }
+
+    const result = await db.query(
+      `SELECT s.id, s.batch_id,
+              u.id AS user_id, u.email, u.full_name, u.phone, u.profile_completed,
+              b.name AS batch_name
+       FROM students s
+       JOIN users u ON s.user_id = u.id
+       LEFT JOIN batches b ON s.batch_id = b.id
+       WHERE s.institute_id = $1
+       ORDER BY b.name, u.email`,
+      [institute_id]
+    );
+
+    // Group by batch
+    const batches = {};
+    for (const row of result.rows) {
+      const batchId = row.batch_id || 'unassigned';
+      if (!batches[batchId]) {
+        batches[batchId] = {
+          batch_id: row.batch_id,
+          batch_name: row.batch_name || 'Unassigned',
+          total: 0,
+          completed: 0,
+          pending: 0,
+          students: [],
+        };
+      }
+      batches[batchId].total++;
+      if (row.profile_completed) {
+        batches[batchId].completed++;
+      } else {
+        batches[batchId].pending++;
+      }
+      batches[batchId].students.push({
+        id: row.id,
+        user_id: row.user_id,
+        email: row.email,
+        full_name: row.full_name,
+        phone: row.phone,
+        profile_completed: row.profile_completed,
+      });
+    }
+
+    res.json(Object.values(batches));
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Update student.
 async function update(req, res, next) {
   const client = await db.getClient();
@@ -186,6 +447,40 @@ async function update(req, res, next) {
   }
 }
 
+// Get student's own profile (for settings and profile editing).
+async function getMyProfile(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const result = await db.query(
+      `SELECT u.id AS user_id, u.full_name, u.phone, u.email, u.profile_completed,
+              s.id AS student_id, s.address, s.date_of_birth, s.roll_number, s.institute_id,
+              b.name AS batch_name,
+              i.name AS institute_name,
+              p.full_name AS parent_name, p.phone AS parent_phone
+       FROM users u
+       JOIN students s ON s.user_id = u.id
+       LEFT JOIN batches b ON s.batch_id = b.id
+       LEFT JOIN institutes i ON s.institute_id = i.id
+       LEFT JOIN users p ON s.parent_user_id = p.id
+       WHERE u.id = $1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student record not found' });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      ...row,
+      phone: (row.phone || '').startsWith('TMP') ? '' : row.phone,
+      parent_phone: (row.parent_phone || '').startsWith('TMP') ? '' : (row.parent_phone || ''),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Delete student.
 async function remove(req, res, next) {
   try {
@@ -202,4 +497,4 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, create, update, remove };
+module.exports = { list, create, update, remove, bulkAdmit, profileSetup, profileStatus, getMyProfile };

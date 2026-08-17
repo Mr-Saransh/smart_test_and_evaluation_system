@@ -20,7 +20,14 @@ export function Settings() {
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <h3 className="h2" style={{ marginBottom: 16 }}>Personal Profile</h3>
+        <div className="fxb" style={{ marginBottom: 16 }}>
+          <h3 className="h2" style={{ marginBottom: 0 }}>Personal Profile</h3>
+          {user?.role === 'student' && (
+            <Link to="/student/profile" className="btn bp bsm">
+              ✏️ Edit Profile Details
+            </Link>
+          )}
+        </div>
         <div className="g2">
           <div>
             <div className="muted" style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Full Name</div>
@@ -32,7 +39,9 @@ export function Settings() {
           </div>
           <div>
             <div className="muted" style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Phone</div>
-            <div style={{ fontSize: 15, fontWeight: 500 }}>{user?.phone}</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>
+              {(user?.phone || '').startsWith('TMP') ? 'Not set (Setup required)' : user?.phone}
+            </div>
           </div>
           <div>
             <div className="muted" style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Email</div>

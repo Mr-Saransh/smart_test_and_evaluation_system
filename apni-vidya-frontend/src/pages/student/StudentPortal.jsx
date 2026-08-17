@@ -1,20 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { GET, POST, toast } from '../../utils/api';
+import { GET, POST, PUT, toast } from '../../utils/api';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CalendarIcon, FileTextIcon, BookOpenIcon, ClockIcon, CurrencyIcon, MegaphoneIcon, CheckCircleIcon } from '../../components/common/Icons';
+import { CalendarIcon, FileTextIcon, BookOpenIcon, ClockIcon, CurrencyIcon, MegaphoneIcon, CheckCircleIcon, UsersIcon, UserCheckIcon } from '../../components/common/Icons';
 import { SkeletonTable, SkeletonCard } from '../../components/common/Skeleton';
 import { EmptyState } from '../../components/common/EmptyState';
 import { formatCurrency, formatDate, getScoreColor, getAttendanceColor, formatTime, getMondayBasedDayIndex } from '../../utils/helpers';
 import { TT_DAYS, STATUS_CONFIG, getSubjectColor } from '../../utils/constants';
 
 export function StudentPortal() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [plannerSubmitting, setPlannerSubmitting] = useState(false);
+
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    phone: '',
+    date_of_birth: '',
+    address: '',
+    parent_name: '',
+    parent_phone: '',
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState({ error: '', success: '' });
 
   const view = location.pathname.split('/')[2] || 'home';
   const todayIdx = getMondayBasedDayIndex();
@@ -24,25 +35,83 @@ export function StudentPortal() {
     setLoading(true);
     
     Promise.all([
-      GET(`/public/portfolio/${user.id}`).catch(() => ({})),
+      GET(user.role === 'parent' ? '/dashboard/parent' : '/dashboard/student').catch(() => ({})),
       GET(`/timetable/me`).catch(() => ({ flat: [] })),
       GET(`/planner/mine`).catch(() => []),
-      GET(`/materials/${user.institute_id}`).catch(() => []),
-      GET(`/tests/institute/${user.institute_id}`).catch(() => []),
-      GET(`/announcements/institute/${user.institute_id}`).catch(() => []),
-      GET(`/fees/mine`).catch(() => [])
-    ]).then(([portfolio, timetableRes, planner, materials, tests, announcements, fees]) => {
+      GET(`/materials/mine`).catch(() => []),
+      GET(`/tests/student/mine`).catch(() => []),
+      GET(`/announcements/feed`).catch(() => []),
+      GET(`/fees/mine`).catch(() => []),
+      GET(`/students/me`).catch(() => null)
+    ]).then(([portfolio, timetableRes, planner, materials, tests, announcements, fees, profile]) => {
       setData({
         portfolio,
         timetable: timetableRes.flat || timetableRes || [],
         planner,
-        materials: materials.filter(m => !m.batch_id || m.batch_id === user.batch_id),
-        tests: tests.filter(t => t.batch_id === user.batch_id),
-        announcements: announcements.filter(a => a.audience === 'all' || a.batch_id === user.batch_id),
-        fees
+        materials: materials || [],
+        tests: tests || [],
+        announcements: announcements || [],
+        fees: fees || [],
+        profile
       });
+      if (profile) {
+        setProfileForm({
+          full_name: profile.full_name || user?.full_name || '',
+          phone: profile.phone || (user?.phone?.startsWith('TMP') ? '' : user?.phone) || '',
+          date_of_birth: profile.date_of_birth ? profile.date_of_birth.slice(0, 10) : '',
+          address: profile.address || '',
+          parent_name: profile.parent_name || '',
+          parent_phone: profile.parent_phone || '',
+        });
+      }
     }).finally(() => setLoading(false));
   }, [user]);
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!profileForm.full_name.trim()) {
+      setProfileMsg({ error: 'Full name is required', success: '' });
+      return;
+    }
+    if (!profileForm.phone.trim() || !/^(\+?91|0)?[6-9]\d{9}$/.test(profileForm.phone.trim())) {
+      setProfileMsg({ error: 'Enter a valid 10-digit mobile number', success: '' });
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileMsg({ error: '', success: '' });
+
+    try {
+      await POST('/students/profile-setup', {
+        full_name: profileForm.full_name.trim(),
+        phone: profileForm.phone.trim(),
+        address: profileForm.address.trim() || null,
+        date_of_birth: profileForm.date_of_birth || null,
+        parent_name: profileForm.parent_name.trim() || null,
+        parent_phone: profileForm.parent_phone.trim() || null,
+      });
+
+      updateUser({ full_name: profileForm.full_name.trim(), phone: profileForm.phone.trim(), profile_completed: true });
+      setData(prev => ({
+        ...prev,
+        profile: {
+          ...(prev.profile || {}),
+          full_name: profileForm.full_name.trim(),
+          phone: profileForm.phone.trim(),
+          address: profileForm.address.trim(),
+          date_of_birth: profileForm.date_of_birth,
+          parent_name: profileForm.parent_name.trim(),
+          parent_phone: profileForm.parent_phone.trim(),
+        }
+      }));
+      setProfileMsg({ error: '', success: 'Profile updated successfully!' });
+      setTimeout(() => setProfileMsg({ error: '', success: '' }), 4000);
+    } catch (err) {
+      setProfileMsg({ error: err.message || 'Failed to update profile', success: '' });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const togglePlannerTask = async (taskId) => {
     if (plannerSubmitting) return;
@@ -84,8 +153,23 @@ export function StudentPortal() {
       <div className="g2" style={{ alignItems: 'start' }}>
         <div className="glass-panel" style={{ gridColumn: '1 / -1', position: 'relative', overflow: 'hidden', padding: 32, background: 'var(--gradient-brand)', color: 'white', borderRadius: 'var(--radius-xl)', border: 'none' }}>
           <div style={{ position: 'absolute', right: -20, top: -40, opacity: 0.1, fontSize: 180 }}>🎓</div>
-          <h2 className="h1" style={{ color: '#fff', marginBottom: 4, position: 'relative' }}>Welcome back, {user.full_name}</h2>
-          <p style={{ color: 'rgba(255,255,255,0.8)', position: 'relative', margin: 0, fontWeight: 500, fontSize: '0.875rem' }}>{student?.batch || 'Enrolled Student'} • Roll {student?.roll_number || 'No Roll No'}</p>
+          <div className="fxb" style={{ position: 'relative', alignItems: 'flex-start' }}>
+            <div>
+              <h2 className="h1" style={{ color: '#fff', marginBottom: 4 }}>Welcome back, {user.full_name}</h2>
+              <p style={{ color: 'rgba(255,255,255,0.85)', margin: 0, fontWeight: 500, fontSize: '0.875rem' }}>
+                {student?.batch || data.profile?.batch_name || 'Enrolled Student'} • Roll {student?.roll_number || data.profile?.roll_number || 'No Roll No'}
+              </p>
+            </div>
+            {user.role === 'student' && (
+              <button 
+                className="btn bs bsm" 
+                onClick={() => navigate('/student/profile')}
+                style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', backdropFilter: 'blur(8px)' }}
+              >
+                ✏️ Edit Profile
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="glass-panel hover-lift" onClick={() => navigate('/student/attendance')} style={{ cursor: 'pointer', flex: 1, padding: 24, borderRadius: 'var(--radius-xl)' }}>
@@ -488,6 +572,141 @@ export function StudentPortal() {
     );
   };
 
+  const renderProfile = () => {
+    const prof = data.profile || {};
+    return (
+      <div className="animate-fade-in" style={{ maxWidth: 800 }}>
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="fxb" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2 className="h2" style={{ marginBottom: 4 }}>Student Profile</h2>
+              <p className="muted" style={{ fontSize: 13 }}>View and update your personal & guardian contact details</p>
+            </div>
+            <div className="fx" style={{ gap: 8 }}>
+              {prof.batch_name && (
+                <span className="badge" style={{ background: 'var(--color-primary-bg)', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  Batch: {prof.batch_name}
+                </span>
+              )}
+              {prof.roll_number && (
+                <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                  Roll: {prof.roll_number}
+                </span>
+              )}
+              {prof.institute_name && (
+                <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                  🏫 {prof.institute_name}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {profileMsg.error && (
+            <div style={{ padding: '12px 16px', background: '#fee2e2', color: '#dc2626', borderRadius: 8, marginBottom: 16, fontSize: 13, fontWeight: 500 }}>
+              {profileMsg.error}
+            </div>
+          )}
+          {profileMsg.success && (
+            <div style={{ padding: '12px 16px', background: '#d1fae5', color: '#059669', borderRadius: 8, marginBottom: 16, fontSize: 13, fontWeight: 500 }}>
+              {profileMsg.success}
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProfile}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              👤 Personal Information
+            </div>
+            <div className="g2" style={{ marginBottom: 16 }}>
+              <div className="field">
+                <label>Full Name <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                <input
+                  type="text"
+                  className="inp"
+                  value={profileForm.full_name}
+                  onChange={(e) => setProfileForm(p => ({ ...p, full_name: e.target.value }))}
+                  placeholder="Your full name"
+                />
+              </div>
+              <div className="field">
+                <label>Mobile Number <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                <input
+                  type="tel"
+                  className="inp"
+                  value={profileForm.phone}
+                  onChange={(e) => setProfileForm(p => ({ ...p, phone: e.target.value }))}
+                  placeholder="10-digit mobile number"
+                />
+              </div>
+              <div className="field">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  className="inp"
+                  value={prof.email || user?.email || ''}
+                  disabled
+                  style={{ background: 'var(--bg-secondary)', cursor: 'not-allowed', color: 'var(--text-tertiary)' }}
+                />
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>Used for account sign in</div>
+              </div>
+              <div className="field">
+                <label>Date of Birth</label>
+                <input
+                  type="date"
+                  className="inp"
+                  value={profileForm.date_of_birth}
+                  onChange={(e) => setProfileForm(p => ({ ...p, date_of_birth: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="field" style={{ marginBottom: 24 }}>
+              <label>Residential Address</label>
+              <textarea
+                className="inp"
+                rows={2}
+                value={profileForm.address}
+                onChange={(e) => setProfileForm(p => ({ ...p, address: e.target.value }))}
+                placeholder="Enter complete residential address"
+              />
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              👨‍👩‍👧 Guardian / Parent Details
+            </div>
+            <div className="g2" style={{ marginBottom: 24 }}>
+              <div className="field">
+                <label>Parent / Guardian Name</label>
+                <input
+                  type="text"
+                  className="inp"
+                  value={profileForm.parent_name}
+                  onChange={(e) => setProfileForm(p => ({ ...p, parent_name: e.target.value }))}
+                  placeholder="Parent's full name"
+                />
+              </div>
+              <div className="field">
+                <label>Parent Mobile Number</label>
+                <input
+                  type="tel"
+                  className="inp"
+                  value={profileForm.parent_phone}
+                  onChange={(e) => setProfileForm(p => ({ ...p, parent_phone: e.target.value }))}
+                  placeholder="10-digit mobile number"
+                />
+              </div>
+            </div>
+
+            <div className="fx" style={{ gap: 12 }}>
+              <button type="submit" className="btn bp" disabled={profileSaving}>
+                {profileSaving ? 'Saving Changes...' : 'Save Profile Details'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   const views = {
     home: renderHome,
     timetable: renderTimetable,
@@ -498,12 +717,14 @@ export function StudentPortal() {
     planner: renderPlanner,
     attendance: renderAttendance,
     progress: renderProgress,
+    profile: renderProfile,
   };
 
   const viewNames = {
     home: 'Dashboard', timetable: 'Timetable', tests: 'Tests & Assessments', 
     materials: 'Study Materials', fees: 'Fee Status', announcements: 'Announcements',
-    planner: 'Study Planner', attendance: 'Attendance Record', progress: 'My Progress'
+    planner: 'Study Planner', attendance: 'Attendance Record', progress: 'My Progress',
+    profile: 'My Profile',
   };
 
   return (

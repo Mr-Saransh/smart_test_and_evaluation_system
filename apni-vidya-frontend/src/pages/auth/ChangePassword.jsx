@@ -38,9 +38,13 @@ export function ChangePassword() {
       setSuccess(true);
       updateUser({ must_reset_password: false });
       setTimeout(() => {
-        const home = ROLE_HOME[user?.role] || '/';
-        navigate(home, { replace: true });
-      }, 1500);
+        if (user?.role === 'student' && !user?.profile_completed) {
+          navigate('/setup-profile', { replace: true });
+        } else {
+          const home = ROLE_HOME[user?.role] || '/';
+          navigate(home, { replace: true });
+        }
+      }, 1200);
     } catch (err) {
       setError(err.message || 'Failed to change password');
     } finally {

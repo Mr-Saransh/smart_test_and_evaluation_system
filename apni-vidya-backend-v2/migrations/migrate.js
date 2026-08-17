@@ -13,6 +13,8 @@ const migrations = [
   require('./005_password_resets.js'),
   require('./006_payments.js'),
   require('./007_materials_and_reports.js'),
+  require('./010_student_admission.js'),
+  require('./011_widen_user_phone.js'),
 ];
 
 async function migrate() {

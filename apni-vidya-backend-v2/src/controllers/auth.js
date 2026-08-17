@@ -100,7 +100,8 @@ async function login(req, res, next) {
         email: user.email,
         role: user.role,
         full_name: user.full_name,
-        must_reset_password: user.must_reset_password || false,
+        must_reset_password: Boolean(user.must_reset_password),
+        profile_completed: Boolean(user.profile_completed),
       },
       token,
     });
@@ -112,7 +113,7 @@ async function login(req, res, next) {
 async function me(req, res, next) {
   try {
     const result = await db.query(
-      'SELECT id, phone, email, role, full_name, created_at, must_reset_password FROM users WHERE id = $1',
+      'SELECT id, phone, email, role, full_name, created_at, must_reset_password, profile_completed FROM users WHERE id = $1',
       [req.user.id]
     );
     if (result.rows.length === 0) {
@@ -120,6 +121,9 @@ async function me(req, res, next) {
     }
     
     const user = result.rows[0];
+    user.must_reset_password = Boolean(user.must_reset_password);
+    user.profile_completed = Boolean(user.profile_completed);
+
     if (user.role === 'student') {
       const s = await db.query('SELECT institute_id, batch_id FROM students WHERE user_id = $1', [user.id]);
       if (s.rows.length > 0) {

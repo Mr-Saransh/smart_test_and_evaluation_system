@@ -108,6 +108,7 @@ export const NAV_ITEMS = {
     { id: 'fees', label: 'Fee Status', path: '/student/fees', icon: CurrencyIcon },
     { id: 'announcements', label: 'Announcements', path: '/student/announcements', icon: MegaphoneIcon },
     { id: 'leaderboard', label: 'Leaderboard', path: '/leaderboard', icon: AwardIcon },
+    { id: 'profile', label: 'My Profile', path: '/student/profile', icon: UsersIcon },
     { id: 'settings', label: 'Settings', path: '/student/settings', icon: SettingsIcon },
   ],
 

@@ -36,6 +36,11 @@ export function Login() {
         return;
       }
 
+      if (res.user.role === 'student' && !res.user.profile_completed) {
+        navigate('/setup-profile', { replace: true });
+        return;
+      }
+
       const rolePaths = {
         institute_admin: '/admin',
         teacher: '/teacher',

@@ -20,11 +20,13 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
+    "nodemailer": "^9.0.5",
     "pdf-parse": "^2.4.5",
     "pg": "^8.11.3",
     "qrcode": "^1.5.3",
     "razorpay": "^2.9.6",
     "uuid": "^9.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

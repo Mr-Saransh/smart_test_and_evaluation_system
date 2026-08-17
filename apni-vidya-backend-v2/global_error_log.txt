@@ -2,4 +2,10 @@
     at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async hasInstituteAccess (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\utils\access.js:7:15)
-    at async list (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\course.js:25:11)\n
+    at async list (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\course.js:25:11)\n2026-08-17T14:24:46.135Z [error] GET /api/auth/me -> Error: getaddrinfo ENOTFOUND db.prisma.io
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async me (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\auth.js:115:20)\n2026-08-17T14:24:46.253Z [error] GET /api/auth/me -> Error: getaddrinfo ENOTFOUND db.prisma.io
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async me (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\auth.js:115:20)\n

@@ -29,6 +29,10 @@ export function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/change-password" replace />;
   }
 
+  if (user.role === 'student' && !user.profile_completed && location.pathname !== '/setup-profile') {
+    return <Navigate to="/setup-profile" replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // If they try to access a route they don't have permission for, send to their home
     return <Navigate to={ROLE_HOME[user.role] || '/unauthorized'} replace />;
