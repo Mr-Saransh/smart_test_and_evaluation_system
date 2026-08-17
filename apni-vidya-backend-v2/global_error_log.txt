@@ -8,4 +8,16 @@
     at async me (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\auth.js:115:20)\n2026-08-17T14:24:46.253Z [error] GET /api/auth/me -> Error: getaddrinfo ENOTFOUND db.prisma.io
     at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-    at async me (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\auth.js:115:20)\n
+    at async me (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\auth.js:115:20)\n2026-08-17T15:13:11.683Z [error] GET /api/tests/student/mine -> error: column ts1.attempt_number does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n2026-08-17T15:13:12.741Z [error] GET /api/tests/student/mine -> error: column ts1.attempt_number does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n2026-08-17T15:13:46.841Z [error] GET /api/tests/student/mine -> error: column ts1.attempt_number does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n2026-08-17T15:13:47.864Z [error] GET /api/tests/student/mine -> error: column ts1.attempt_number does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n

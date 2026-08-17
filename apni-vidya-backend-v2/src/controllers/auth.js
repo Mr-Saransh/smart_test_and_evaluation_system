@@ -72,7 +72,9 @@ async function login(req, res, next) {
     }
 
     const result = await db.query(
-      `SELECT * FROM users WHERE phone = $1 OR LOWER(email) = LOWER($1)`,
+      `SELECT * FROM users WHERE phone = $1 OR LOWER(email) = LOWER($1)
+       ORDER BY CASE WHEN LOWER(email) = LOWER($1) THEN 0 ELSE 1 END
+       LIMIT 1`,
       [identifier]
     );
 

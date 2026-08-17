@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { GET } from '../../utils/api';
-import { VideoIcon } from '../../components/common/Icons';
+import { GET, PUT, toast } from '../../utils/api';
+import { VideoIcon, EditIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Modal } from '../../components/common/Modal';
 
 export function LiveClasses() {
   const { user, institute } = useAuth();
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editBatchId, setEditBatchId] = useState('');
+  const [editLink, setEditLink] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = async () => {
     try {
@@ -45,8 +50,29 @@ export function LiveClasses() {
     );
   }
 
-  const activeClasses = batches.filter(b => b.is_active && b.meet_link);
   const isTeacher = user?.role === 'teacher' || user?.role === 'institute_admin';
+  const activeClasses = batches.filter(b => b.is_active && (isTeacher || b.meet_link));
+
+  const handleEditLink = (batch) => {
+    setEditBatchId(batch.id);
+    setEditLink(batch.meet_link || '');
+    setShowEditModal(true);
+  };
+
+  const submitLink = async () => {
+    if (!editBatchId) return;
+    setSaving(true);
+    try {
+      await PUT(`/batches/${editBatchId}/meet-link`, { meet_link: editLink });
+      toast.success('Live class link updated');
+      setShowEditModal(false);
+      load();
+    } catch (e) {
+      toast.error('Failed to update link');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in" style={{ padding: 24 }}>
@@ -72,21 +98,59 @@ export function LiveClasses() {
                 {b.description && <p className="muted" style={{ fontSize: 13 }}>{b.description}</p>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto' }}>
-                <a 
-                  href={b.meet_link.startsWith('http') ? b.meet_link : `https://${b.meet_link}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn bp" 
-                  style={{ width: '100%', justifyContent: 'center', gap: 8 }}
-                >
-                  <VideoIcon size={16} />
-                  {isTeacher ? 'Start Class' : 'Join Class'}
-                </a>
+                {b.meet_link ? (
+                  <a 
+                    href={b.meet_link.startsWith('http') ? b.meet_link : `https://${b.meet_link}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn bp" 
+                    style={{ flex: 1, justifyContent: 'center', gap: 8 }}
+                  >
+                    <VideoIcon size={16} />
+                    {isTeacher ? 'Start Class' : 'Join Class'}
+                  </a>
+                ) : (
+                  <div className="btn bs" style={{ flex: 1, justifyContent: 'center', opacity: 0.5 }}>
+                    No Link Set
+                  </div>
+                )}
+                {isTeacher && (
+                  <button className="btn bs" onClick={() => handleEditLink(b)} title="Edit Link">
+                    <EditIcon size={16} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Edit Link Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Set Live Class Link"
+        footer={
+          <div className="fx" style={{ gap: 12, justifyContent: 'flex-end', width: '100%' }}>
+            <button className="btn bs" onClick={() => setShowEditModal(false)} disabled={saving}>Cancel</button>
+            <button className="btn bp" onClick={submitLink} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Link'}
+            </button>
+          </div>
+        }
+      >
+        <div className="form-group">
+          <label className="lbl">Google Meet / Zoom Link</label>
+          <input 
+            type="text" 
+            className="inp" 
+            placeholder="e.g. meet.google.com/abc-defg-hij" 
+            value={editLink} 
+            onChange={e => setEditLink(e.target.value)}
+          />
+          <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>This link will be visible to all students in this batch.</p>
+        </div>
+      </Modal>
     </div>
   );
 }

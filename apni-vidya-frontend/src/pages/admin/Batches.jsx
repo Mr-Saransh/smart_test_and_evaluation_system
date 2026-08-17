@@ -6,6 +6,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { Modal } from '../../components/common/Modal';
 import { SkeletonCard, SkeletonTable } from '../../components/common/Skeleton';
 import { formatDate, formatCurrency, getScoreColor, getAttendanceColor } from '../../utils/helpers';
+import { LeaderboardView } from '../../components/common/LeaderboardView';
 
 export function Batches() {
   const { institute } = useAuth();
@@ -23,11 +24,30 @@ export function Batches() {
   const [details, setDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
+  // Leaderboard Modal state
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState({ top_scorers: [], top_attendance: [] });
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [leaderboardTab, setLeaderboardTab] = useState('scores');
+
   const load = () => {
     if (!institute) return;
     GET(`/batches/all/${institute.id}`).then(setItems).catch(() => {}).finally(() => setLoading(false));
   };
   useEffect(load, [institute]);
+
+  const loadLeaderboard = async (batchId) => {
+    setShowLeaderboard(true);
+    setLoadingLeaderboard(true);
+    try {
+      const res = await GET(`/leaderboard/batch/${batchId}`);
+      setLeaderboardData(res || []);
+    } catch (err) {
+      toast('Failed to load leaderboard', 'error');
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
 
   const setF = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
   const openCreate = () => { setEditing(null); setForm({ name: '', description: '', start_date: '', end_date: '', meet_link: '', capacity: '' }); setShow(true); };
@@ -195,7 +215,12 @@ export function Batches() {
 
                 {/* Top Performers */}
                 <div>
-                  <h3 className="h4" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}><TrendingUpIcon size={16}/> Top Performers</h3>
+                  <div className="fxb" style={{ marginBottom: 12 }}>
+                    <h3 className="h4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><TrendingUpIcon size={16}/> Top Performers</h3>
+                    <button className="btn btn-sm bs" onClick={() => loadLeaderboard(details.id)}>
+                      View Leaderboard
+                    </button>
+                  </div>
                   {details.top_performers?.length > 0 ? (
                     <div className="fx" style={{ flexDirection: 'column', gap: 8 }}>
                       {details.top_performers.map((p, i) => (
@@ -267,6 +292,23 @@ export function Batches() {
             <input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." />
           </div>
         </div>
+      </Modal>
+
+      {/* Leaderboard Modal */}
+      <Modal
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        title={details ? `Leaderboard: ${details.name}` : 'Leaderboard'}
+        footer={<button className="btn bs" onClick={() => setShowLeaderboard(false)}>Close</button>}
+      >
+        <div className="tabs" style={{ marginBottom: 24, marginTop: -12 }}>
+          <button className={`tab${leaderboardTab === 'scores' ? ' active' : ''}`} onClick={() => setLeaderboardTab('scores')}>Top Scorers</button>
+          <button className={`tab${leaderboardTab === 'attendance' ? ' active' : ''}`} onClick={() => setLeaderboardTab('attendance')}>Top Attendance</button>
+        </div>
+        <LeaderboardView 
+          data={leaderboardData ? (leaderboardTab === 'scores' ? leaderboardData.top_scorers?.map(s => ({...s, score_display: `${s.total_score} pts`, subtext: `${s.tests_taken} test${s.tests_taken !== 1 ? 's' : ''} taken`})) : leaderboardData.top_attendance?.map(s => ({...s, score_display: `${s.attendance_pct}%`, subtext: 'Attendance Rate'}))) : []} 
+          loading={loadingLeaderboard} 
+        />
       </Modal>
     </div>
   );

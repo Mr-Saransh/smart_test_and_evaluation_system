@@ -259,17 +259,6 @@ async function profileSetup(req, res, next) {
 
     await client.query('BEGIN');
 
-    // Check if phone is already taken by another user
-    const phoneCheck = await client.query(
-      'SELECT id FROM users WHERE phone = $1 AND id != $2',
-      [phone.trim(), userId]
-    );
-    if (phoneCheck.rows.length > 0) {
-      await client.query('ROLLBACK');
-      client.release();
-      return res.status(409).json({ error: 'This phone number is already registered to another account' });
-    }
-
     // Update user record
     await client.query(
       `UPDATE users SET full_name = $1, phone = $2, profile_completed = true, updated_at = now() WHERE id = $3`,

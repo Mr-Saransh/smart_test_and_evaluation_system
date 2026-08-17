@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { GET, POST, PUT, toast } from '../../utils/api';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CalendarIcon, FileTextIcon, BookOpenIcon, ClockIcon, CurrencyIcon, MegaphoneIcon, CheckCircleIcon, UsersIcon, UserCheckIcon } from '../../components/common/Icons';
+import { CalendarIcon, FileTextIcon, BookOpenIcon, ClockIcon, CurrencyIcon, MegaphoneIcon, CheckCircleIcon, UsersIcon, UserCheckIcon, TrophyIcon } from '../../components/common/Icons';
 import { SkeletonTable, SkeletonCard } from '../../components/common/Skeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { LeaderboardView } from '../../components/common/LeaderboardView';
 import { formatCurrency, formatDate, getScoreColor, getAttendanceColor, formatTime, getMondayBasedDayIndex } from '../../utils/helpers';
 import { TT_DAYS, STATUS_CONFIG, getSubjectColor } from '../../utils/constants';
 
@@ -15,6 +16,7 @@ export function StudentPortal() {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [plannerSubmitting, setPlannerSubmitting] = useState(false);
+  const [leaderboardTab, setLeaderboardTab] = useState('scores');
 
   const [profileForm, setProfileForm] = useState({
     full_name: '',
@@ -42,8 +44,9 @@ export function StudentPortal() {
       GET(`/tests/student/mine`).catch(() => []),
       GET(`/announcements/feed`).catch(() => []),
       GET(`/fees/mine`).catch(() => []),
-      GET(`/students/me`).catch(() => null)
-    ]).then(([portfolio, timetableRes, planner, materials, tests, announcements, fees, profile]) => {
+      GET(`/students/me`).catch(() => null),
+      GET(`/leaderboard/mine`).catch(() => []),
+    ]).then(([portfolio, timetableRes, planner, materials, tests, announcements, fees, profile, leaderboard]) => {
       setData({
         portfolio,
         timetable: timetableRes.flat || timetableRes || [],
@@ -52,6 +55,7 @@ export function StudentPortal() {
         tests: tests || [],
         announcements: announcements || [],
         fees: fees || [],
+        leaderboard: leaderboard || [],
         profile
       });
       if (profile) {
@@ -707,6 +711,18 @@ export function StudentPortal() {
     );
   };
 
+  const renderLeaderboard = () => (
+    <div>
+      <div className="tabs" style={{ marginBottom: 24, marginTop: -12 }}>
+        <button className={`tab${leaderboardTab === 'scores' ? ' active' : ''}`} onClick={() => setLeaderboardTab('scores')}>Top Scorers</button>
+        <button className={`tab${leaderboardTab === 'attendance' ? ' active' : ''}`} onClick={() => setLeaderboardTab('attendance')}>Top Attendance</button>
+      </div>
+      <LeaderboardView 
+        data={data.leaderboard ? (leaderboardTab === 'scores' ? data.leaderboard.top_scorers?.map(s => ({...s, score_display: `${s.total_score} pts`, subtext: `${s.tests_taken} test${s.tests_taken !== 1 ? 's' : ''} taken`})) : data.leaderboard.top_attendance?.map(s => ({...s, score_display: `${s.attendance_pct}%`, subtext: 'Attendance Rate'}))) : []} 
+      />
+    </div>
+  );
+
   const views = {
     home: renderHome,
     timetable: renderTimetable,
@@ -718,13 +734,14 @@ export function StudentPortal() {
     attendance: renderAttendance,
     progress: renderProgress,
     profile: renderProfile,
+    leaderboard: renderLeaderboard,
   };
 
   const viewNames = {
     home: 'Dashboard', timetable: 'Timetable', tests: 'Tests & Assessments', 
     materials: 'Study Materials', fees: 'Fee Status', announcements: 'Announcements',
     planner: 'Study Planner', attendance: 'Attendance Record', progress: 'My Progress',
-    profile: 'My Profile',
+    profile: 'My Profile', leaderboard: 'Batch Leaderboard'
   };
 
   return (

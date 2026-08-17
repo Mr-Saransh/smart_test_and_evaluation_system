@@ -270,3 +270,20 @@ export const CopyIcon = (props) => (
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
   </IconWrapper>
 );
+
+export const TrophyIcon = (props) => (
+  <IconWrapper {...props}>
+    <path d="M8 21h8" />
+    <path d="M12 17v4" />
+    <path d="M7 4h10c1.7 0 3 1.3 3 3v2c0 3.9-3.1 7-7 7h0c-3.9 0-7-3.1-7-7V7c0-1.7 1.3-3 3-3z" />
+    <path d="M4 7h3v2H4z" />
+    <path d="M17 7h3v2h-3z" />
+  </IconWrapper>
+);
+
+export const EditIcon = (props) => (
+  <IconWrapper {...props}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </IconWrapper>
+);

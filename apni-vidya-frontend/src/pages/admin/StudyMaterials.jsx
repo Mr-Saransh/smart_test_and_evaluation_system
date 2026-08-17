@@ -21,8 +21,8 @@ export function StudyMaterials() {
   const load = () => {
     if (!institute) return;
     Promise.all([
-      GET(`/materials/${institute.id}`),
-      GET(`/batches/${institute.id}`)
+      GET(`/materials/institute/${institute.id}`),
+      GET(`/batches/all/${institute.id}`)
     ]).then(([m, b]) => { setItems(m); setBatches(b); })
       .catch(() => {})
       .finally(() => setLoading(false));

@@ -212,4 +212,39 @@ async function getDetails(req, res, next) {
   }
 }
 
-module.exports = { create, list, listAll, update, remove, getDetails };
+async function updateMeetLink(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { meet_link } = req.body;
+
+    const { hasBatchAccess } = require('../utils/access');
+    const hasAccess = await hasBatchAccess(req.user, id);
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Not authorized for this batch' });
+    }
+
+    const result = await db.query(
+      `UPDATE batches 
+       SET meet_link = $1, updated_at = NOW() 
+       WHERE id = $2 AND institute_id = $3
+       RETURNING *`,
+      [meet_link, id, req.user.institute_id] // Note: for teachers institute_id is usually on req.user. If not, they are verified by hasBatchAccess. We can rely on hasBatchAccess and just update by id.
+    );
+
+    if (result.rows.length === 0) {
+      // Because hasBatchAccess passed, this means either batch doesn't exist or doesn't belong to the user's institute
+      const fallbackResult = await db.query(
+        `UPDATE batches SET meet_link = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+        [meet_link, id]
+      );
+      if (fallbackResult.rows.length === 0) return res.status(404).json({ error: 'Batch not found' });
+      return res.json(fallbackResult.rows[0]);
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list, listAll, update, remove, getDetails, updateMeetLink };
