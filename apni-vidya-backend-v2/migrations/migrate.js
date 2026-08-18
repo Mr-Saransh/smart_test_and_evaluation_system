@@ -18,6 +18,8 @@ const migrations = [
   require('./010_student_admission.js'),
   require('./011_widen_user_phone.js'),
   require('./012_allow_duplicate_phones.js'),
+  require('./013_batch_payments.js'),
+  require('./014_batch_deferred_capacity.js'),
 ];
 
 async function migrate() {

@@ -1,9 +1,10 @@
 const db = require('../config/db');
 const { hasInstituteAccess } = require('../utils/access');
+const { sendBatchSubscriptionReceipt } = require('../services/email');
 
 async function create(req, res, next) {
   try {
-    const { institute_id, name, description, start_date, end_date, meet_link } = req.body;
+    const { institute_id, name, description, start_date, end_date, meet_link, capacity } = req.body;
 
     if (!institute_id || !name) {
       return res.status(400).json({ error: 'institute_id and name are required' });
@@ -19,10 +20,14 @@ async function create(req, res, next) {
     }
 
     const result = await db.query(
-      `INSERT INTO batches (institute_id, name, description, start_date, end_date, meet_link)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO batches (institute_id, name, description, start_date, end_date, meet_link, capacity, payment_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [institute_id, name, description || null, start_date || null, end_date || null, meet_link || null]
+      [
+        institute_id, name, description || null, start_date || null, end_date || null, meet_link || null, 
+        capacity || null, 
+        capacity ? 'pending' : 'active'
+      ]
     );
 
     res.status(201).json(result.rows[0]);
@@ -59,14 +64,19 @@ async function update(req, res, next) {
     const { id } = req.params;
     const { name, description, start_date, end_date, is_active, meet_link } = req.body;
 
-    const batch = await db.query(
-      `SELECT b.id FROM batches b
+    const batchRes = await db.query(
+      `SELECT b.id, b.payment_status FROM batches b
        JOIN institutes i ON b.institute_id = i.id
        WHERE b.id = $1 AND i.admin_id = $2`,
       [id, req.user.id]
     );
-    if (batch.rows.length === 0) {
+    if (batchRes.rows.length === 0) {
       return res.status(404).json({ error: 'Batch not found or not authorized' });
+    }
+    
+    // Prevent activating an unpaid batch
+    if (is_active === true && batchRes.rows[0].payment_status === 'pending') {
+      return res.status(403).json({ error: 'Cannot activate an unpaid batch. Please complete the payment first.' });
     }
 
     const result = await db.query(
@@ -247,4 +257,175 @@ async function updateMeetLink(req, res, next) {
   }
 }
 
-module.exports = { create, list, listAll, update, remove, getDetails, updateMeetLink };
+// Batch Subscriptions
+const pay = require('../config/payments');
+const { verifyPaymentSignature } = require('../utils/payments');
+
+async function createSubscriptionOrder(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { type, additional_capacity } = req.body; // 'creation', 'upgrade', 'renewal'
+
+    const batchRes = await db.query(
+      `SELECT b.* FROM batches b
+       JOIN institutes i ON b.institute_id = i.id
+       WHERE b.id = $1 AND i.admin_id = $2`,
+      [id, req.user.id]
+    );
+    if (batchRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Batch not found or not authorized' });
+    }
+    const batch = batchRes.rows[0];
+
+    let orderCapacity = 0;
+    if (type === 'creation') {
+      orderCapacity = batch.capacity || 0;
+    } else if (type === 'renewal') {
+      orderCapacity = (batch.capacity || 0) - (batch.deferred_capacity || 0);
+    } else if (type === 'upgrade') {
+      orderCapacity = additional_capacity || 0;
+    }
+
+    if (orderCapacity <= 0) {
+      return res.status(400).json({ error: 'Invalid capacity for payment' });
+    }
+
+    const amount = orderCapacity * 80 * 100; // 80 INR per student in paise
+
+    if (!pay.isConfigured()) return res.status(503).json({ error: 'Online payments are not configured' });
+
+    const order = await pay.getClient().orders.create({
+      amount,
+      currency: 'INR',
+      receipt: `bsub_${batch.id.split('-')[0]}_${Date.now()}`.slice(0, 40),
+      notes: { batch_id: batch.id, type },
+    });
+
+    await db.query(
+      `INSERT INTO batch_payments (institute_id, batch_id, razorpay_order_id, amount, currency, status, type, additional_capacity, created_by)
+       VALUES ($1, $2, $3, $4, 'INR', 'created', $5, $6, $7)`,
+      [batch.institute_id, batch.id, order.id, order.amount, type, type === 'upgrade' ? additional_capacity : 0, req.user.id]
+    );
+
+    res.json({
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: pay.keyId()
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function verifySubscription(req, res, next) {
+  const client = await db.getClient();
+  try {
+    const { id } = req.params;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature, pay.keySecret())) {
+      return res.status(400).json({ error: 'Payment verification failed' });
+    }
+
+    await client.query('BEGIN');
+    
+    // Lock payment record
+    const pRes = await client.query('SELECT * FROM batch_payments WHERE razorpay_order_id = $1 FOR UPDATE', [razorpay_order_id]);
+    if (pRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    const payment = pRes.rows[0];
+    if (payment.status === 'paid') {
+      await client.query('COMMIT');
+      return res.json({ status: 'paid', already: true });
+    }
+
+    // Lock batch record
+    const bRes = await client.query('SELECT * FROM batches WHERE id = $1 FOR UPDATE', [payment.batch_id]);
+    if (bRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    const batch = bRes.rows[0];
+
+    // Update payment record
+    await client.query(
+      "UPDATE batch_payments SET status = 'paid', razorpay_payment_id = $1, updated_at = now() WHERE id = $2",
+      [razorpay_payment_id, payment.id]
+    );
+
+    // Apply batch update logic based on type
+    let newCapacity = batch.capacity;
+    let newValidUntil = batch.valid_until;
+    let newPaymentStatus = 'active';
+    let newDeferredCapacity = batch.deferred_capacity || 0;
+
+    const now = new Date();
+    
+    if (payment.type === 'creation') {
+      newValidUntil = new Date();
+      newValidUntil.setMonth(newValidUntil.getMonth() + 1);
+      newDeferredCapacity = 0;
+    } else if (payment.type === 'upgrade') {
+      newCapacity = (batch.capacity || 0) + payment.additional_capacity;
+      newDeferredCapacity = newDeferredCapacity + payment.additional_capacity;
+    } else if (payment.type === 'renewal') {
+      if (!newValidUntil || newValidUntil < now) {
+        newValidUntil = new Date();
+      }
+      newValidUntil.setMonth(newValidUntil.getMonth() + 1);
+      newDeferredCapacity = 0;
+    }
+
+    await client.query(
+      `UPDATE batches 
+       SET capacity = $1, valid_until = $2, payment_status = $3, deferred_capacity = $4, updated_at = now()
+       WHERE id = $5`,
+      [newCapacity, newValidUntil, newPaymentStatus, newDeferredCapacity, batch.id]
+    );
+
+    await client.query('COMMIT');
+    
+    // Fetch institute and admin email to send the receipt
+    try {
+      const instRes = await db.query(
+        `SELECT i.name as institute_name, u.email as admin_email 
+         FROM institutes i 
+         JOIN users u ON i.admin_id = u.id 
+         WHERE i.id = $1`, 
+         [batch.institute_id]
+      );
+      if (instRes.rows.length > 0) {
+        const instInfo = instRes.rows[0];
+        let billedCapacity = 0;
+        if (payment.type === 'creation') billedCapacity = batch.capacity || 0;
+        else if (payment.type === 'upgrade') billedCapacity = payment.additional_capacity || 0;
+        else if (payment.type === 'renewal') billedCapacity = (batch.capacity || 0) - (batch.deferred_capacity || 0);
+
+        await sendBatchSubscriptionReceipt({
+          to: instInfo.admin_email,
+          instituteName: instInfo.institute_name,
+          batchName: batch.name,
+          type: payment.type,
+          amount: payment.amount,
+          transactionId: razorpay_payment_id,
+          date: new Date().toLocaleDateString(),
+          capacity: billedCapacity
+        });
+      }
+    } catch (emailErr) {
+      console.error('[email] Failed to send receipt during verifySubscription:', emailErr.message);
+    }
+
+    res.json({ status: 'paid' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { create, list, listAll, update, remove, getDetails, updateMeetLink, createSubscriptionOrder, verifySubscription };

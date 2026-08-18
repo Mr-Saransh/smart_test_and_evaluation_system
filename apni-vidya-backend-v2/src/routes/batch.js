@@ -11,4 +11,7 @@ router.put('/:id', authenticate, authorize('institute_admin'), batch.update);
 router.put('/:id/meet-link', authenticate, authorize('institute_admin', 'teacher'), batch.updateMeetLink);
 router.delete('/:id', authenticate, authorize('institute_admin'), batch.remove);
 
+router.post('/:id/subscription/order', authenticate, authorize('institute_admin'), batch.createSubscriptionOrder);
+router.post('/:id/subscription/verify', authenticate, authorize('institute_admin'), batch.verifySubscription);
+
 module.exports = router;

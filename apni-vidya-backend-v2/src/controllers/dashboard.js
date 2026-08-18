@@ -252,8 +252,173 @@ async function weeklyReport(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function adminDashboard(req, res, next) {
+  try {
+    const { institute_id } = req.params;
+    const { hasInstituteAccess } = require('../utils/access');
+    
+    if (!(await hasInstituteAccess(req.user, institute_id))) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // 1. Core Metrics
+    const coreMetricsRes = await db.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM students WHERE institute_id = $1) as total_students,
+        (SELECT COUNT(*) FROM batches WHERE institute_id = $1 AND is_active = true) as active_batches,
+        (SELECT COUNT(*) FROM courses WHERE institute_id = $1) as total_courses,
+        (SELECT COUNT(*) FROM enrollments WHERE institute_id = $1 AND status = 'pending') as pending_requests
+    `, [institute_id]);
+    const core = coreMetricsRes.rows[0];
+
+    // 2. Attendance Stats
+    const attendRes = await db.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE status IN ('present', 'late')) * 100.0 / NULLIF(COUNT(*), 0) as todays_pct,
+        (SELECT COUNT(DISTINCT student_id) FROM attendance WHERE institute_id = $1 AND date >= CURRENT_DATE - INTERVAL '7 days' AND status = 'absent') as low_attendance_students,
+        (SELECT COUNT(*) FILTER (WHERE status IN ('present', 'late')) FROM attendance WHERE institute_id = $1 AND date >= CURRENT_DATE - INTERVAL '7 days') as weekly_present,
+        (SELECT COUNT(*) FILTER (WHERE status = 'absent') FROM attendance WHERE institute_id = $1 AND date >= CURRENT_DATE - INTERVAL '7 days') as weekly_absent
+      FROM attendance WHERE institute_id = $1 AND date = CURRENT_DATE
+    `, [institute_id]);
+    const attend = attendRes.rows[0];
+
+    // 3. Financial Stats
+    const feeRes = await db.query(`
+      SELECT 
+        COALESCE(SUM(amount_due), 0) as total_fees,
+        COALESCE(SUM(amount_paid), 0) as total_collected,
+        COALESCE(SUM(amount_due - amount_paid), 0) as total_pending,
+        COUNT(DISTINCT student_id) FILTER (WHERE status = 'overdue' OR (status = 'pending' AND due_date < CURRENT_DATE)) as fee_dues_students
+      FROM fee_records fr JOIN students s ON fr.student_id = s.id WHERE s.institute_id = $1
+    `, [institute_id]);
+    const fee = feeRes.rows[0];
+
+    // 4. Test Performance
+    const perfRes = await db.query(`
+      SELECT 
+        ROUND(AVG(100.0 * ts.score / NULLIF(ts.max_marks,0)), 1) as avg_performance,
+        COUNT(*) FILTER (WHERE 100.0 * ts.score / NULLIF(ts.max_marks,0) >= 90) as excellent_count,
+        COUNT(*) FILTER (WHERE 100.0 * ts.score / NULLIF(ts.max_marks,0) >= 75 AND 100.0 * ts.score / NULLIF(ts.max_marks,0) < 90) as good_count,
+        COUNT(*) FILTER (WHERE 100.0 * ts.score / NULLIF(ts.max_marks,0) >= 50 AND 100.0 * ts.score / NULLIF(ts.max_marks,0) < 75) as average_count,
+        COUNT(*) FILTER (WHERE 100.0 * ts.score / NULLIF(ts.max_marks,0) < 50) as poor_count,
+        COUNT(ts.id) as total_tests_taken
+      FROM test_submissions ts JOIN tests t ON ts.test_id = t.id WHERE t.institute_id = $1
+    `, [institute_id]);
+    const perf = perfRes.rows[0];
+
+    // 5. Admissions Timeline (Last 30 days)
+    const admissionsRes = await db.query(`
+      SELECT DATE(created_at) as date, COUNT(*) as new_admissions
+      FROM students WHERE institute_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+      GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC
+    `, [institute_id]);
+    
+    // Generate 30 days continuous timeline
+    const timeline = [];
+    const newAdmissionsThisMonth = admissionsRes.rows.reduce((sum, row) => {
+      const isThisMonth = new Date(row.date).getMonth() === new Date().getMonth();
+      return sum + (isThisMonth ? Number(row.new_admissions) : 0);
+    }, 0);
+
+    const admissionMap = admissionsRes.rows.reduce((acc, row) => {
+      const dStr = typeof row.date === 'string' ? row.date.split('T')[0] : row.date.toISOString().split('T')[0];
+      acc[dStr] = Number(row.new_admissions);
+      return acc;
+    }, {});
+
+    let activeStudentsCount = Number(core.total_students) - admissionsRes.rows.reduce((s,r) => s + Number(r.new_admissions), 0);
+    for(let i=29; i>=0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dStr = d.toISOString().split('T')[0];
+      const newAdm = admissionMap[dStr] || 0;
+      activeStudentsCount += newAdm;
+      timeline.push({
+        date: d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+        new_admissions: newAdm,
+        active_students: activeStudentsCount
+      });
+    }
+
+    // 6. Upcoming & Recent Tests
+    const upcomingTestsRes = await db.query(`
+      SELECT t.id, t.title, t.start_time, t.duration_minutes, b.name as batch_name
+      FROM tests t LEFT JOIN batches b ON t.batch_id = b.id
+      WHERE t.institute_id = $1 AND t.start_time > CURRENT_TIMESTAMP AND t.status = 'active'
+      ORDER BY t.start_time ASC LIMIT 3
+    `, [institute_id]);
+
+    const testsThisWeekRes = await db.query(`
+      SELECT COUNT(*) as count FROM tests 
+      WHERE institute_id = $1 AND start_time >= date_trunc('week', CURRENT_DATE) AND start_time < date_trunc('week', CURRENT_DATE) + INTERVAL '7 days'
+    `, [institute_id]);
+
+    const recentTestsRes = await db.query(`
+      SELECT t.id, t.title, b.name as batch_name, t.start_time,
+        (SELECT COUNT(*) FROM test_submissions ts WHERE ts.test_id = t.id) as student_count,
+        (SELECT AVG(100.0 * ts.score / NULLIF(ts.max_marks,0)) FROM test_submissions ts WHERE ts.test_id = t.id) as avg_score,
+        (SELECT MAX(100.0 * ts.score / NULLIF(ts.max_marks,0)) FROM test_submissions ts WHERE ts.test_id = t.id) as top_score
+      FROM tests t LEFT JOIN batches b ON t.batch_id = b.id
+      WHERE t.institute_id = $1 AND t.status = 'completed'
+      ORDER BY t.start_time DESC LIMIT 4
+    `, [institute_id]);
+
+    // 7. Recent Announcements
+    const announcementsRes = await db.query(`
+      SELECT id, title, content, type, target_type, created_at 
+      FROM announcements WHERE institute_id = $1 
+      ORDER BY created_at DESC LIMIT 4
+    `, [institute_id]);
+
+    res.json({
+      metrics: {
+        total_students: Number(core.total_students),
+        active_batches: Number(core.active_batches),
+        courses: Number(core.total_courses),
+        todays_attendance_pct: Math.round(Number(attend.todays_pct) || 0),
+        fees_pending: Number(fee.total_pending),
+        new_admissions: newAdmissionsThisMonth,
+        tests_this_week: Number(testsThisWeekRes.rows[0].count),
+        avg_performance: Math.round(Number(perf.avg_performance) || 0)
+      },
+      alerts: {
+        fee_dues_students: Number(fee.fee_dues_students),
+        low_attendance_students: Number(attend.low_attendance_students),
+        upcoming_tests: upcomingTestsRes.rows.length,
+        pending_requests: Number(core.pending_requests)
+      },
+      charts: {
+        studentTimeline: timeline,
+        performance: {
+          excellent: Number(perf.excellent_count),
+          good: Number(perf.good_count),
+          average: Number(perf.average_count),
+          poor: Number(perf.poor_count),
+          total_tests: Number(perf.total_tests_taken)
+        },
+        fees: {
+          collected: Number(fee.total_collected),
+          pending: Number(fee.total_pending),
+          total: Number(fee.total_fees)
+        },
+        attendance: {
+          present: Number(attend.weekly_present),
+          absent: Number(attend.weekly_absent),
+          total: Number(attend.weekly_present) + Number(attend.weekly_absent)
+        }
+      },
+      lists: {
+        upcoming_tests: upcomingTestsRes.rows,
+        recent_tests: recentTestsRes.rows,
+        announcements: announcementsRes.rows
+      }
+    });
+
+  } catch (err) { next(err); }
+}
+
 module.exports = {
-  studentDashboard, parentDashboard, studentReport, batchReport, enablePortfolio, publicPortfolio, weeklyReport,
+  studentDashboard, parentDashboard, studentReport, batchReport, enablePortfolio, publicPortfolio, weeklyReport, adminDashboard,
   // Exposed so the scheduled-report dispatcher can reuse the same compiler the
   // dashboards use; keeps the "auto-compiled from attendance + test data"
   // contract in one place.

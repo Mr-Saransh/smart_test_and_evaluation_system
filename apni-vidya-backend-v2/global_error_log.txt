@@ -20,4 +20,16 @@
     at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n2026-08-17T15:13:47.864Z [error] GET /api/tests/student/mine -> error: column ts1.attempt_number does not exist
     at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-    at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n
+    at async listForStudent (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\test.js:167:20)\n2026-08-17T19:50:06.696Z [error] GET /api/auth/me -> Error: Connection terminated unexpectedly
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async me (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\auth.js:136:17)\n2026-08-18T16:44:34.289Z [error] GET /api/dashboard/admin/4b4005ab-0baa-4e1f-a664-7dd269a879fb -> error: relation "enrollments" does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async adminDashboard (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\dashboard.js:265:28)\n2026-08-18T16:44:37.584Z [error] GET /api/dashboard/admin/4b4005ab-0baa-4e1f-a664-7dd269a879fb -> error: relation "enrollments" does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async adminDashboard (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\dashboard.js:265:28)\n2026-08-18T16:44:38.260Z [error] GET /api/dashboard/admin/4b4005ab-0baa-4e1f-a664-7dd269a879fb -> error: relation "enrollments" does not exist
+    at D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async adminDashboard (D:\S\projects\Smart_evaluation_system_LMS\apni-vidya-backend-v2\src\controllers\dashboard.js:265:28)\n

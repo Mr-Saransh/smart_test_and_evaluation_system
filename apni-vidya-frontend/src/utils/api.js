@@ -143,3 +143,47 @@ export async function payNow(feeRecordId, onDone) {
   });
   rzp.open();
 }
+
+export async function payBatchSubscription(batchId, type, additionalCapacity, onDone) {
+  let order;
+  try {
+    order = await POST(`/batches/${batchId}/subscription/order`, { type, additional_capacity: additionalCapacity });
+  } catch {
+    return;
+  }
+
+  try {
+    await loadRazorpay();
+  } catch (e) {
+    toast(e.message);
+    return;
+  }
+
+  const rzp = new window.Razorpay({
+    key: order.key_id,
+    amount: order.amount,
+    currency: order.currency,
+    order_id: order.order_id,
+    name: 'Apni Vidya',
+    description: `Batch ${type === 'creation' ? 'Creation' : type === 'upgrade' ? 'Upgrade' : 'Renewal'}`,
+    handler: async (resp) => {
+      try {
+        await POST(`/batches/${batchId}/subscription/verify`, {
+          razorpay_order_id: resp.razorpay_order_id,
+          razorpay_payment_id: resp.razorpay_payment_id,
+          razorpay_signature: resp.razorpay_signature,
+        }, 'Subscription payment successful');
+        if (onDone) onDone(true);
+      } catch { 
+        if (onDone) onDone(false);
+      }
+    },
+    modal: {
+      ondismiss: function() {
+        if (onDone) onDone(false);
+      }
+    },
+    theme: { color: '#4f46e5' },
+  });
+  rzp.open();
+}
