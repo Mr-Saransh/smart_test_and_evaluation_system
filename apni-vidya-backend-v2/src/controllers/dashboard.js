@@ -267,7 +267,7 @@ async function adminDashboard(req, res, next) {
         (SELECT COUNT(*) FROM students WHERE institute_id = $1) as total_students,
         (SELECT COUNT(*) FROM batches WHERE institute_id = $1 AND is_active = true) as active_batches,
         (SELECT COUNT(*) FROM courses WHERE institute_id = $1) as total_courses,
-        (SELECT COUNT(*) FROM enrollments WHERE institute_id = $1 AND status = 'pending') as pending_requests
+        (SELECT COUNT(*) FROM enrollment_requests WHERE institute_id = $1 AND status = 'pending') as pending_requests
     `, [institute_id]);
     const core = coreMetricsRes.rows[0];
 
@@ -342,30 +342,34 @@ async function adminDashboard(req, res, next) {
 
     // 6. Upcoming & Recent Tests
     const upcomingTestsRes = await db.query(`
-      SELECT t.id, t.title, t.start_time, t.duration_minutes, b.name as batch_name
+      SELECT t.id, t.title, 
+        COALESCE(t.start_date, t.scheduled_at, t.created_at) as start_time, 
+        COALESCE(t.duration_min, 30) as duration_minutes, 
+        b.name as batch_name
       FROM tests t LEFT JOIN batches b ON t.batch_id = b.id
-      WHERE t.institute_id = $1 AND t.start_time > CURRENT_TIMESTAMP AND t.status = 'active'
-      ORDER BY t.start_time ASC LIMIT 3
+      WHERE t.institute_id = $1 AND COALESCE(t.start_date, t.scheduled_at, t.created_at) > CURRENT_TIMESTAMP AND t.status = 'active'
+      ORDER BY COALESCE(t.start_date, t.scheduled_at, t.created_at) ASC LIMIT 3
     `, [institute_id]);
 
     const testsThisWeekRes = await db.query(`
       SELECT COUNT(*) as count FROM tests 
-      WHERE institute_id = $1 AND start_time >= date_trunc('week', CURRENT_DATE) AND start_time < date_trunc('week', CURRENT_DATE) + INTERVAL '7 days'
+      WHERE institute_id = $1 AND COALESCE(start_date, scheduled_at, created_at) >= date_trunc('week', CURRENT_DATE) AND COALESCE(start_date, scheduled_at, created_at) < date_trunc('week', CURRENT_DATE) + INTERVAL '7 days'
     `, [institute_id]);
 
     const recentTestsRes = await db.query(`
-      SELECT t.id, t.title, b.name as batch_name, t.start_time,
+      SELECT t.id, t.title, b.name as batch_name, 
+        COALESCE(t.start_date, t.scheduled_at, t.created_at) as start_time,
         (SELECT COUNT(*) FROM test_submissions ts WHERE ts.test_id = t.id) as student_count,
         (SELECT AVG(100.0 * ts.score / NULLIF(ts.max_marks,0)) FROM test_submissions ts WHERE ts.test_id = t.id) as avg_score,
         (SELECT MAX(100.0 * ts.score / NULLIF(ts.max_marks,0)) FROM test_submissions ts WHERE ts.test_id = t.id) as top_score
       FROM tests t LEFT JOIN batches b ON t.batch_id = b.id
       WHERE t.institute_id = $1 AND t.status = 'completed'
-      ORDER BY t.start_time DESC LIMIT 4
+      ORDER BY COALESCE(t.start_date, t.scheduled_at, t.created_at) DESC LIMIT 4
     `, [institute_id]);
 
     // 7. Recent Announcements
     const announcementsRes = await db.query(`
-      SELECT id, title, content, type, target_type, created_at 
+      SELECT id, title, body as content, audience as type, audience as target_type, created_at 
       FROM announcements WHERE institute_id = $1 
       ORDER BY created_at DESC LIMIT 4
     `, [institute_id]);

@@ -107,17 +107,16 @@ export function Overview() {
         </div>
 
         {/* Stat Cards */}
-        <div className="stats-grid animate-stagger" style={{ marginBottom: 32 }}>
+        <div className="animate-stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: 12, marginBottom: 32 }}>
           {teacherStats.map(s => (
-            <div key={s.label} className="glass-panel hover-lift" onClick={() => navigate(s.path)} style={{ cursor: 'pointer', padding: '20px 16px', borderRadius: 'var(--radius-xl)' }}>
-              <div className="fxb" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <div style={{ background: s.bg, width: 44, height: 44, borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.fg }}>{s.icon}</div>
-                </div>
-                <div>
-                  <div className="h4" style={{ marginBottom: 4, color: 'var(--text-secondary)', fontSize: '0.65rem' }}>{s.label}</div>
-                  <div className="sn" style={{ color: 'var(--text-primary)', fontSize: '1.75rem' }}>{s.value}</div>
-                </div>
+            <div key={s.label} className="hover-lift" onClick={() => navigate(s.path)} style={{ background: 'var(--bg-surface)', padding: 16, cursor: 'pointer', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden', width: '100%' }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, background: `radial-gradient(circle at top right, ${s.fg}15, transparent 70%)` }} />
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg, ${s.fg}15, ${s.fg}05)`, color: s.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.fg}20`, zIndex: 1 }}>
+                {s.icon}
+              </div>
+              <div style={{ zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase' }}>{s.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{s.value}</div>
               </div>
             </div>
           ))}
@@ -192,75 +191,78 @@ export function Overview() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 60 }}>
-      {/* Scrollable Top Metrics */}
-      <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, marginBottom: 8, scrollbarWidth: 'none' }}>
+      {/* Premium Top Metrics Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: 12, marginBottom: 28 }}>
         {topMetrics.map((sm, i) => (
-          <div key={i} onClick={() => navigate(sm.path)} className="card hover-lift" style={{ minWidth: 200, flex: 1, padding: 20, cursor: 'pointer', borderTop: `4px solid ${sm.color}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="fxb">
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${sm.color}15`, color: sm.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {sm.icon}
-              </div>
+          <div key={i} onClick={() => navigate(sm.path)} className="hover-lift" style={{ background: 'var(--bg-surface)', padding: 16, cursor: 'pointer', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden', width: '100%' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 100, height: 40, background: `radial-gradient(ellipse at top, ${sm.color}15, transparent 70%)` }} />
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg, ${sm.color}15, ${sm.color}05)`, color: sm.color, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${sm.color}20`, zIndex: 1 }}>
+              {sm.icon}
             </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>{sm.title}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{sm.value}</div>
+            <div style={{ zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4 }}>{sm.title}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{sm.value}</div>
             </div>
-            <div style={{ fontSize: 12, color: sm.color, fontWeight: 600, marginTop: 'auto' }}>
-              {sm.trend} &rarr;
+            <div style={{ fontSize: 11, color: sm.color, fontWeight: 600, marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, zIndex: 1, background: `${sm.color}10`, padding: '4px 10px', borderRadius: 20 }}>
+              {sm.trend} <ChevronRight size={12} />
             </div>
           </div>
         ))}
       </div>
 
       {/* Alerts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <div className="card fxb" style={{ padding: '16px 20px', borderLeft: '4px solid #f59e0b', cursor: 'pointer' }} onClick={() => navigate('/admin/fees')}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
+        <div className="hover-lift fxb" style={{ background: 'var(--bg-surface)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigate('/admin/fees')}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(to bottom, #f59e0b, #fbbf24)' }} />
           <div className="fx" style={{ gap: 12 }}>
-            <div style={{ background: '#f59e0b20', color: '#f59e0b', padding: 10, borderRadius: '50%' }}><IndianRupee size={18}/></div>
+            <div style={{ background: 'linear-gradient(135deg, #f59e0b20, #f59e0b10)', color: '#f59e0b', padding: 10, borderRadius: 10, border: '1px solid #f59e0b20' }}><IndianRupee size={18}/></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Fee Dues</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#f59e0b' }}>{a.fee_dues_students} students</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{a.fee_dues_students} students</div>
             </div>
           </div>
-          <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 600 }}>View details</span>
+          <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 600, background: '#f59e0b10', padding: '4px 8px', borderRadius: 6 }}>View</span>
         </div>
 
-        <div className="card fxb" style={{ padding: '16px 20px', borderLeft: '4px solid #ef4444', cursor: 'pointer' }} onClick={() => navigate('/admin/attendance')}>
+        <div className="hover-lift fxb" style={{ background: 'var(--bg-surface)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigate('/admin/attendance')}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(to bottom, #ef4444, #f87171)' }} />
           <div className="fx" style={{ gap: 12 }}>
-            <div style={{ background: '#ef444420', color: '#ef4444', padding: 10, borderRadius: '50%' }}><AlertCircle size={18}/></div>
+            <div style={{ background: 'linear-gradient(135deg, #ef444420, #ef444410)', color: '#ef4444', padding: 10, borderRadius: 10, border: '1px solid #ef444420' }}><AlertCircle size={18}/></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Low Attendance</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#ef4444' }}>{a.low_attendance_students} students</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{a.low_attendance_students} students</div>
             </div>
           </div>
-          <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>View details</span>
+          <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600, background: '#ef444410', padding: '4px 8px', borderRadius: 6 }}>View</span>
         </div>
 
-        <div className="card fxb" style={{ padding: '16px 20px', borderLeft: '4px solid #3b82f6', cursor: 'pointer' }} onClick={() => navigate('/admin/tests')}>
+        <div className="hover-lift fxb" style={{ background: 'var(--bg-surface)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigate('/admin/tests')}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(to bottom, #3b82f6, #60a5fa)' }} />
           <div className="fx" style={{ gap: 12 }}>
-            <div style={{ background: '#3b82f620', color: '#3b82f6', padding: 10, borderRadius: '50%' }}><FileText size={18}/></div>
+            <div style={{ background: 'linear-gradient(135deg, #3b82f620, #3b82f610)', color: '#3b82f6', padding: 10, borderRadius: 10, border: '1px solid #3b82f620' }}><FileText size={18}/></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Upcoming Tests</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#3b82f6' }}>{a.upcoming_tests} tests</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{a.upcoming_tests} tests</div>
             </div>
           </div>
-          <span style={{ fontSize: 12, color: '#3b82f6', fontWeight: 600 }}>View details</span>
+          <span style={{ fontSize: 12, color: '#3b82f6', fontWeight: 600, background: '#3b82f610', padding: '4px 8px', borderRadius: 6 }}>View</span>
         </div>
 
-        <div className="card fxb" style={{ padding: '16px 20px', borderLeft: '4px solid #8b5cf6', cursor: 'pointer' }} onClick={() => navigate('/admin/enrollments')}>
+        <div className="hover-lift fxb" style={{ background: 'var(--bg-surface)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigate('/admin/enrollments')}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(to bottom, #8b5cf6, #a78bfa)' }} />
           <div className="fx" style={{ gap: 12 }}>
-            <div style={{ background: '#8b5cf620', color: '#8b5cf6', padding: 10, borderRadius: '50%' }}><UserCheck size={18}/></div>
+            <div style={{ background: 'linear-gradient(135deg, #8b5cf620, #8b5cf610)', color: '#8b5cf6', padding: 10, borderRadius: 10, border: '1px solid #8b5cf620' }}><UserCheck size={18}/></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Pending Admissions</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#8b5cf6' }}>{a.pending_requests} enquiries</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{a.pending_requests} requests</div>
             </div>
           </div>
-          <span style={{ fontSize: 12, color: '#8b5cf6', fontWeight: 600 }}>View details</span>
+          <span style={{ fontSize: 12, color: '#8b5cf6', fontWeight: 600, background: '#8b5cf610', padding: '4px 8px', borderRadius: 6 }}>View</span>
         </div>
       </div>
 
       {/* Row 1: Student Overview Chart, Performance Donut, Upcoming Tests */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 24, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 24, alignItems: 'start' }}>
         
         {/* Student Overview */}
         <div className="card" style={{ padding: 24, gridColumn: '1 / -1' }}>
@@ -288,7 +290,7 @@ export function Overview() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 24 }}>
           {/* Performance Overview */}
           <div className="card" style={{ padding: 24 }}>
             <div className="fxb" style={{ marginBottom: 16 }}>
@@ -357,7 +359,7 @@ export function Overview() {
       </div>
 
       {/* Row 2: Fee Collection, Attendance Summary, Quick Actions */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 24 }}>
         
         {/* Fee Collection */}
         <div className="card" style={{ padding: 24 }}>
@@ -442,7 +444,7 @@ export function Overview() {
       </div>
 
       {/* Row 3: Recent Tests Conducted, Announcements */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
         
         {/* Recent Tests Table */}
         <div className="card" style={{ padding: 24, overflowX: 'auto', gridColumn: '1 / -1' }}>
