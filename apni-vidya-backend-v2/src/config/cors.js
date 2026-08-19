@@ -27,8 +27,13 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowed = allowedOrigins();
-    // Allow vercel preview deployments and the specific prod URL
-    if (origin.endsWith('.vercel.app') || origin === 'https://smart-test-and-evaluation-system.vercel.app' || allowed.includes(origin)) {
+    // Allow vercel preview deployments and the specific prod URLs
+    if (
+      origin.endsWith('.vercel.app') || 
+      origin === 'https://smart-test-and-evaluation-system.vercel.app' || 
+      origin === 'https://lms.apnividya.in' || 
+      allowed.includes(origin)
+    ) {
       return callback(null, true);
     }
     
