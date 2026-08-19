@@ -9,6 +9,10 @@ import {
 export function Landing() {
   const [openFaq, setOpenFaq] = useState(null);
 
+  // Configuration for Institute Branding
+  const instituteName = "Apni Vidya"; // Replace with your institute name
+  const instituteLogoUrl = ""; // Replace with your logo URL if available
+
   const modules = [
     {
       id: 'admissions',
@@ -56,12 +60,12 @@ export function Landing() {
 
   const faqs = [
     {
-      q: 'How does Apni Vidya help coaching institutes?',
-      a: 'Apni Vidya is a complete, unified management platform. It replaces manual paper registers, scattered WhatsApp groups, and spreadsheets with one centralized dashboard for admissions, attendance, exams, fees, and study materials.'
+      q: `How does ${instituteName} help coaching institutes?`,
+      a: `${instituteName} is a complete, unified management platform. It replaces manual paper registers, scattered WhatsApp groups, and spreadsheets with one centralized dashboard for admissions, attendance, exams, fees, and study materials.`
     },
     {
       q: 'Can parents track student progress on WhatsApp?',
-      a: 'Yes. Apni Vidya integrates with SMS and WhatsApp notification services to deliver automated absent notifications, test score cards, and fee payment receipts directly to registered parent mobile numbers.'
+      a: `Yes. ${instituteName} integrates with SMS and WhatsApp notification services to deliver automated absent notifications, test score cards, and fee payment receipts directly to registered parent mobile numbers.`
     },
     {
       q: 'Do students and teachers get their own logins?',
@@ -89,17 +93,33 @@ export function Landing() {
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid #e2e8f0'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 12,
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <GraduationCapIcon size={24} color="#fff" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {instituteLogoUrl ? (
+            <img src={instituteLogoUrl} alt="Institute Logo" style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'cover' }} />
+          ) : (
+            <div style={{
+              width: 42, height: 42, borderRadius: 12,
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}>
+              <GraduationCapIcon size={24} color="#fff" />
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <span style={{ 
+              fontSize: instituteName.length > 15 ? 16 : 22, 
+              fontWeight: 900, 
+              fontFamily: 'var(--font-heading, sans-serif)', 
+              color: '#0f172a', 
+              letterSpacing: '-0.03em',
+              lineHeight: 1.1,
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+              maxWidth: '200px'
+            }}>
+              {instituteName}
+            </span>
           </div>
-          <span style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-heading, sans-serif)', color: '#0f172a', letterSpacing: '-0.03em' }}>
-            Apni Vidya
-          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -130,16 +150,19 @@ export function Landing() {
           
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', borderRadius: 30, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#e2e8f0', fontSize: 13, fontWeight: 700, marginBottom: 24, backdropFilter: 'blur(10px)' }}>
             <AwardIcon size={16} color="#fbbf24" />
-            <span style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}>India's #1 Institute Management Platform</span>
+            <span style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}>Upgrade your Institute with the power of A</span>
           </div>
 
           <h1 style={{ fontSize: 'clamp(2.8rem, 6vw, 4.5rem)', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.035em', marginBottom: 24, fontFamily: 'var(--font-heading, serif)', textShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
-            Manage Your Institute With<br/>
-            <span style={{ color: '#fbbf24', textShadow: '0 2px 8px rgba(251, 191, 36, 0.3)' }}>Absolute Clarity</span>
+            Your Institute.<br/>
+            <span style={{ color: '#fbbf24', textShadow: '0 2px 8px rgba(251, 191, 36, 0.3)' }}>Reimagined for the Future.</span>
           </h1>
 
-          <p style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.3rem)', color: '#f1f5f9', lineHeight: 1.6, maxWidth: 700, margin: '0 auto 40px', fontWeight: 500, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-            Everything coaching centers and premium academies need to run smoothly: contactless QR onboarding, instant digital attendance, automated test grading, and 1-click fee tracking.
+          <p style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.3rem)', color: '#f1f5f9', lineHeight: 1.6, maxWidth: 700, margin: '0 auto 20px', fontWeight: 500, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+            You focus on teaching. We simplify everything else. From student onboarding to fees, attendance, exams, performance and communication—run your entire institute from one intelligent platform designed to save time, reduce leakage and accelerate growth.
+          </p>
+          <p style={{ fontSize: '1.25rem', color: '#fbbf24', fontWeight: 800, marginBottom: 40, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+            Run Smarter. Save More. Grow Faster.
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -271,7 +294,7 @@ export function Landing() {
           <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 900, fontFamily: 'var(--font-heading, serif)', letterSpacing: '-0.02em', color: '#0f172a', marginBottom: 12 }}>
             Frequently Asked Questions
           </h2>
-          <p style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Clear answers to common questions about Apni Vidya.</p>
+          <p style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Clear answers to common questions about {instituteName}.</p>
         </div>
 
         <div style={{ display: 'grid', gap: 16 }}>
@@ -311,12 +334,16 @@ export function Landing() {
       {/* ─── 8. FOOTER ─── */}
       <footer style={{ padding: '40px 20px', background: '#ffffff', borderTop: '1px solid #e2e8f0', color: '#64748b', textAlign: 'center', fontSize: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <GraduationCapIcon size={18} color="#fff" />
-          </div>
-          <span style={{ fontWeight: 900, fontSize: 18, color: '#0f172a', fontFamily: 'var(--font-heading, sans-serif)' }}>Apni Vidya</span>
+          {instituteLogoUrl ? (
+            <img src={instituteLogoUrl} alt="Institute Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
+          ) : (
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GraduationCapIcon size={18} color="#fff" />
+            </div>
+          )}
+          <span style={{ fontWeight: 900, fontSize: 18, color: '#0f172a', fontFamily: 'var(--font-heading, sans-serif)' }}>{instituteName}</span>
         </div>
-        <p style={{ marginBottom: 4, fontWeight: 500 }}>© {new Date().getFullYear()} Apni Vidya. All rights reserved.</p>
+        <p style={{ marginBottom: 4, fontWeight: 500 }}>© {new Date().getFullYear()} {instituteName}. All rights reserved.</p>
         <p style={{ fontSize: 12 }}>The premium management platform for coaching institutes.</p>
       </footer>
     </div>

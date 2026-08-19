@@ -7,7 +7,7 @@ import { getInitials } from '../utils/helpers';
 import './DashboardLayout.css';
 
 export function DashboardLayout() {
-  const { user, logout } = useAuth();
+  const { user, institute, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
@@ -84,7 +84,7 @@ export function DashboardLayout() {
               <GraduationCapIcon size={18} color="#fff" />
             </div>
             <div>
-              <div className="sidebar-logo-text">Apni Vidya</div>
+              <div className="sidebar-logo-text">{institute?.name || "Apni Vidya"}</div>
               <div className="sidebar-logo-sub">{roleLabel}</div>
             </div>
           </div>
@@ -173,7 +173,7 @@ export function DashboardLayout() {
               <div className="sidebar-logo-icon" style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)' }}>
                 <GraduationCapIcon size={15} color="#fff" />
               </div>
-              <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Apni Vidya</span>
+              <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>{institute?.name || "Apni Vidya"}</span>
             </div>
           </div>
           <div className="fx" style={{ gap: 10 }}>

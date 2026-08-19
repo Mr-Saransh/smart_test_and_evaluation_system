@@ -27,8 +27,10 @@ export function Overview() {
   const isTeacher = user?.role === 'teacher';
 
   useEffect(() => {
-    if (!institute) { setLoading(false); return; }
+    if (!institute) { return; }
     
+    setLoading(true);
+
     if (isTeacher) {
       Promise.all([
         GET(`/batches/${institute.id}`).catch(() => []),
@@ -115,8 +117,8 @@ export function Overview() {
                 {s.icon}
               </div>
               <div style={{ zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase' }}>{s.label}</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase', textAlign: 'center', wordBreak: 'break-word', maxWidth: '100%' }}>{s.label}</div>
+                <div style={{ fontSize: 'clamp(18px, 2vw, 24px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, wordBreak: 'break-word', maxWidth: '100%', textAlign: 'center' }}>{s.value}</div>
               </div>
             </div>
           ))}
@@ -200,10 +202,10 @@ export function Overview() {
               {sm.icon}
             </div>
             <div style={{ zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4 }}>{sm.title}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{sm.value}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4, textAlign: 'center', wordBreak: 'break-word', maxWidth: '100%' }}>{sm.title}</div>
+              <div style={{ fontSize: 'clamp(18px, 2vw, 24px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, wordBreak: 'break-word', maxWidth: '100%', textAlign: 'center' }}>{sm.value}</div>
             </div>
-            <div style={{ fontSize: 11, color: sm.color, fontWeight: 600, marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, zIndex: 1, background: `${sm.color}10`, padding: '4px 10px', borderRadius: 20 }}>
+            <div style={{ fontSize: 11, color: sm.color, fontWeight: 600, marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, zIndex: 1, background: `${sm.color}10`, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
               {sm.trend} <ChevronRight size={12} />
             </div>
           </div>

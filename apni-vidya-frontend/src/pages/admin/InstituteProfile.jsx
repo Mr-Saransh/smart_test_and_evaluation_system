@@ -6,7 +6,6 @@ export function InstituteProfile() {
   const { institute, setInstitute } = useAuth();
   const [form, setForm] = useState({ name: '', city: '', state: '', address: '', pincode: '' });
   const [saving, setSaving] = useState(false);
-  const [qrLoading, setQrLoading] = useState(false);
 
   useEffect(() => {
     if (institute) setForm({ name: institute.name || '', city: institute.city || '', state: institute.state || '', address: institute.address || '', pincode: institute.pincode || '' });
@@ -29,15 +28,6 @@ export function InstituteProfile() {
     setSaving(false);
   };
 
-  const regenQR = async () => {
-    if (!institute) return;
-    setQrLoading(true);
-    try {
-      const res = await POST(`/institutes/${institute.id}/regenerate-qr`, undefined, 'QR code regenerated');
-      if (res?.qr_code_data) setInstitute({ ...institute, qr_code_data: res.qr_code_data });
-    } catch { /* */ }
-    setQrLoading(false);
-  };
 
   return (
     <div className="animate-fade-in">
@@ -59,30 +49,7 @@ export function InstituteProfile() {
           <button className="btn bp" onClick={save} disabled={saving}>{saving ? 'Saving...' : institute ? 'Update Profile' : 'Create Institute'}</button>
         </div>
 
-        {institute && (
-          <div className="card" style={{ flex: '0 0 300px', textAlign: 'center' }}>
-            <h3 className="h2" style={{ marginBottom: 8 }}>Enrollment QR Code</h3>
-            <p className="muted" style={{ fontSize: 12, marginBottom: 16 }}>Scan to open student self-enrollment form</p>
-            <div style={{ width: 200, height: 200, margin: '0 auto 16px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-              {qrLoading ? (
-                <span className="muted" style={{ fontSize: 13 }}>Generating...</span>
-              ) : institute.qr_code_data ? (
-                <img src={institute.qr_code_data} alt="Enrollment QR" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              ) : (
-                <div style={{ textAlign: 'center' }}>
-                  <span className="muted" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>No QR Generated</span>
-                  <button className="btn bs bsm" onClick={regenQR}>Generate QR</button>
-                </div>
-              )}
-            </div>
-            <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, color: 'var(--color-primary)', wordBreak: 'break-all', marginBottom: 12 }}>
-              /enroll/{institute.enrollment_slug}
-            </div>
-            <button className="btn bs bsm w-full" style={{ justifyContent: 'center' }} onClick={regenQR} disabled={qrLoading}>
-              {qrLoading ? 'Generating...' : 'Regenerate QR Code'}
-            </button>
-          </div>
-        )}
+
       </div>
     </div>
   );
