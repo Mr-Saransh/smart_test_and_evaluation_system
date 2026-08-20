@@ -538,7 +538,7 @@
   border-radius: 20px;
 }
 
-/* Live Activity / WhatsApp / Feed Strip */
+/* Live Activity / Alert / Feed Strip */
 .landing-feed-card {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -551,7 +551,7 @@
   flex-wrap: wrap;
 }
 
-.landing-whatsapp-pill {
+.landing-alert-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;

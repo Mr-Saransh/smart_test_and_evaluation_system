@@ -14,7 +14,6 @@ export function Landing() {
   const [openFaq, setOpenFaq] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [consoleTab, setConsoleTab] = useState('overview');
-  const [selectedRole, setSelectedRole] = useState('admin');
   const [studentCount, setStudentCount] = useState(350);
   const [reminderSent, setReminderSent] = useState(false);
 
@@ -38,8 +37,8 @@ export function Landing() {
       icon: ClipboardIcon,
       accent: '#0284c7',
       category: 'operations',
-      badge: 'WhatsApp Alerts',
-      desc: 'Take attendance batch-by-batch in under 10 seconds. Parents receive instant WhatsApp and SMS alerts when a student is marked absent.'
+      badge: 'Real-Time Alerts',
+      desc: 'Take attendance batch-by-batch in under 10 seconds. Parents receive instant absent notifications and digital records are saved automatically.'
     },
     {
       id: 'assessments',
@@ -56,8 +55,8 @@ export function Landing() {
       icon: CurrencyIcon,
       accent: '#e11d48',
       category: 'finance',
-      badge: 'Razorpay UPI',
-      desc: 'Set installment schedules, track pending dues, send 1-click reminders, and collect payments directly via Razorpay UPI and cards with automated digital receipts.'
+      badge: 'Digital Invoicing',
+      desc: 'Set installment schedules, track pending dues, send 1-click reminders, and record payments with automated digital PDF receipts.'
     },
     {
       id: 'materials',
@@ -86,19 +85,19 @@ export function Landing() {
   const faqs = [
     {
       q: `How does ${instituteName} help coaching institutes?`,
-      a: `${instituteName} is a complete, unified management platform. It replaces manual paper registers, scattered WhatsApp groups, and spreadsheets with one centralized dashboard for admissions, attendance, exams, fees, and study materials.`
+      a: `${instituteName} is a complete, unified management platform. It replaces manual paper registers, scattered communication channels, and spreadsheets with one centralized dashboard for admissions, attendance, exams, fees, and study materials.`
     },
     {
-      q: 'Can parents track student progress on WhatsApp?',
-      a: `Yes. ${instituteName} integrates with automated notifications to deliver absent alerts, test score cards, and fee payment receipts directly to registered parent WhatsApp numbers.`
+      q: 'How do parents stay updated with student progress?',
+      a: `${instituteName} provides real-time notifications for attendance, test score cards, and fee receipts directly via the dedicated parent and student portal.`
     },
     {
       q: 'Do students and teachers get their own logins?',
       a: 'Yes. The system provides dedicated portals for Institute Admins, Teachers, and Students with granular Role-Based Access Controls (RBAC).'
     },
     {
-      q: 'How does fee collection work?',
-      a: 'You can define custom course fees and installment plans. Parents can pay securely online via Razorpay (UPI, Google Pay, PhonePe, Cards), or you can record offline cash/cheque payments with instant PDF receipt generation.'
+      q: 'How does fee tracking and invoicing work?',
+      a: 'You can define custom course fees and installment plans, record payments with instant PDF receipt generation, and track pending dues with 1-click reminders.'
     },
     {
       q: 'How fast can our institute get started?',
@@ -214,7 +213,7 @@ export function Landing() {
             </div>
             <div className="landing-trust-bullet-item">
               <span className="landing-trust-check">✓</span>
-              <span>WhatsApp & UPI Integrated</span>
+              <span>Cloud Backup & Instant Reports</span>
             </div>
           </div>
 
@@ -296,7 +295,7 @@ export function Landing() {
                       <div className="landing-metric-val" style={{ color: '#34d399' }}>
                         ₹4,82,500
                         <span className="landing-metric-badge" style={{ background: 'rgba(37, 99, 235, 0.2)', color: '#93c5fd' }}>
-                          Auto UPI Settle
+                          Auto Invoiced
                         </span>
                       </div>
                       <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>
@@ -305,11 +304,11 @@ export function Landing() {
                     </div>
                   </div>
 
-                  {/* Live Stream / WhatsApp Simulation Strip */}
+                  {/* Live Stream / Feed Simulation Strip */}
                   <div className="landing-feed-card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <div className="landing-whatsapp-pill">
-                        <span>💬 WhatsApp Live Alert</span>
+                      <div className="landing-alert-pill">
+                        <span>📢 Instant Parent Alert</span>
                       </div>
                       <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         Parent of <strong>Aarav Sharma (Class 12)</strong> notified of on-time attendance at 08:30 AM.
@@ -333,14 +332,13 @@ export function Landing() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ width: 80, height: 80, background: '#ffffff', borderRadius: 10, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {/* Simulated QR Pattern */}
                           <div style={{ width: '100%', height: '100%', border: '4px dashed #1e3a8a', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#1e3a8a' }}>
                             QR SCAN
                           </div>
                         </div>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff' }}>Self-Onboarding Link</div>
-                          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Place on reception desk, flyers, or Instagram bio</div>
+                          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Place on reception desk, flyers, or social media</div>
                           <div style={{ fontSize: 11, color: '#60a5fa', fontWeight: 700, marginTop: 6 }}>apnividya.in/enroll/apex-academy</div>
                         </div>
                       </div>
@@ -418,13 +416,13 @@ export function Landing() {
                     <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
                       <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Automated Fee Recovery Rate</div>
                       <div style={{ fontSize: 24, fontWeight: 900, color: '#34d399', margin: '4px 0' }}>94.2% Collected</div>
-                      <div style={{ fontSize: 12, color: '#cbd5e1' }}>Direct UPI receipts with instant PDF generation</div>
+                      <div style={{ fontSize: 12, color: '#cbd5e1' }}>Digital installment receipts with instant PDF generation</div>
                     </div>
 
                     <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
                       <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Pending Dues Across Batches</div>
                       <div style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', margin: '4px 0' }}>6 Students Pending</div>
-                      <div style={{ fontSize: 12, color: '#cbd5e1' }}>Automated WhatsApp reminder queue ready</div>
+                      <div style={{ fontSize: 12, color: '#cbd5e1' }}>Automated reminder queue ready</div>
                     </div>
                   </div>
 
@@ -432,7 +430,7 @@ export function Landing() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <CurrencyIcon size={18} color="#fbbf24" />
                       <span style={{ fontSize: 13, color: '#fef3c7', fontWeight: 600 }}>
-                        {reminderSent ? "✓ Dispatched 6 WhatsApp payment links via Razorpay!" : "6 parents have pending installment due this Friday."}
+                        {reminderSent ? "✓ Dispatched 6 payment reminders successfully!" : "6 parents have pending installment due this Friday."}
                       </span>
                     </div>
                     <button 
@@ -448,7 +446,7 @@ export function Landing() {
                         transition: 'all 0.2s'
                       }}
                     >
-                      {reminderSent ? "Sent Successfully ✓" : "📲 Send 1-Click WhatsApp Reminders"}
+                      {reminderSent ? "Sent Successfully ✓" : "📨 Send 1-Click Fee Reminders"}
                     </button>
                   </div>
                 </div>
@@ -528,7 +526,7 @@ export function Landing() {
             <div className="landing-role-bullets">
               <div>✓ Real-time revenue & pending dues ledger</div>
               <div>✓ Multi-branch & batch oversight</div>
-              <div>✓ Automated WhatsApp attendance dispatches</div>
+              <div>✓ Automated attendance & fee reporting</div>
             </div>
           </div>
 
@@ -571,12 +569,12 @@ export function Landing() {
             </div>
             <h3 className="landing-role-title">Parents</h3>
             <p className="landing-role-desc">
-              Unprecedented transparency with automated WhatsApp absent alerts, exam score cards, and 1-click UPI fee receipts.
+              Unprecedented transparency with instant absent alerts, digital exam scorecards, and automated fee receipts.
             </p>
             <div className="landing-role-bullets">
-              <div>✓ Instant absent alerts on WhatsApp</div>
+              <div>✓ Instant absent alerts & notifications</div>
               <div>✓ Digital exam score card deliveries</div>
-              <div>✓ Transparent installment schedules & UPI</div>
+              <div>✓ Transparent installment schedules & PDF receipts</div>
             </div>
           </div>
 
@@ -618,7 +616,7 @@ export function Landing() {
             </div>
             <div className="landing-compare-item" style={{ color: '#7f1d1d' }}>
               <span>❌</span>
-              <span>Uncollected fee leakage and awkward phone reminders with scattered paper receipts.</span>
+              <span>Uncollected fee leakage and lost paper receipts.</span>
             </div>
             <div className="landing-compare-item" style={{ color: '#7f1d1d' }}>
               <span>❌</span>
@@ -642,11 +640,11 @@ export function Landing() {
             </div>
             <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
               <span>✓</span>
-              <span><strong>Instant WhatsApp Alerts:</strong> Parents notified automatically the moment a student is absent.</span>
+              <span><strong>Instant Parent Alerts:</strong> Parents notified automatically the moment a student is absent.</span>
             </div>
             <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
               <span>✓</span>
-              <span><strong>Automated Razorpay UPI:</strong> 1-Click payment links with automated digital tax receipts.</span>
+              <span><strong>Automated Fee Invoicing:</strong> Instant digital receipts with installment tracking and dues ledger.</span>
             </div>
             <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
               <span>✓</span>
@@ -706,7 +704,7 @@ export function Landing() {
               <div style={{ fontSize: 28, fontWeight: 900, color: '#34d399', margin: '6px 0' }}>
                 ₹{revenueLeakagePrevented}
               </div>
-              <div style={{ fontSize: 11.5, color: '#cbd5e1' }}>Via automated WhatsApp UPI links</div>
+              <div style={{ fontSize: 11.5, color: '#cbd5e1' }}>Via automated fee tracking & installment reminders</div>
             </div>
 
             <div className="landing-roi-stat-box">
@@ -835,7 +833,7 @@ export function Landing() {
             <div>
               <div style={{ color: '#fbbf24', fontSize: 18, marginBottom: 12 }}>★★★★★</div>
               <p style={{ fontSize: 15, color: '#334155', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 20 }}>
-                "{instituteName} cut our morning attendance chaos down to under 2 minutes. Parents are thrilled getting WhatsApp score cards and payment receipts directly."
+                "{instituteName} cut our morning attendance chaos down to under 2 minutes. Parents are thrilled receiving digital scorecards and automated payment receipts directly."
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -853,7 +851,7 @@ export function Landing() {
             <div>
               <div style={{ color: '#fbbf24', fontSize: 18, marginBottom: 12 }}>★★★★★</div>
               <p style={{ fontSize: 15, color: '#334155', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 20 }}>
-                "The Razorpay UPI integration alone recovered over ₹2.4 Lakhs in pending installment dues that we used to lose track of in paper receipts."
+                "The automated fee ledger and installment reminders alone recovered over ₹2.4 Lakhs in pending dues that we used to lose track of in paper registers."
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
