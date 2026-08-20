@@ -181,6 +181,14 @@ input, select, textarea { font-family: inherit; }
 @media (max-width: 900px) { .g2, .g3 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .g2, .g3 { grid-template-columns: 1fr; } }
 
+/* Responsive visibility utilities */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+}
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+}
+
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 
 .sc { display: flex; flex-direction: column; gap: 6px; }

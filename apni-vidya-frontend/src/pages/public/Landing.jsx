@@ -4,16 +4,23 @@ import {
   GraduationCapIcon, UsersIcon, ClipboardIcon, FileTextIcon,
   CurrencyIcon, BookOpenIcon, ArrowRightIcon, CheckCircleIcon,
   ShieldIcon, CalendarIcon, AwardIcon, ChevronRightIcon,
-  TrendingUpIcon, ClockIcon, CpuIcon, TrophyIcon, BellIcon
+  TrendingUpIcon, ClockIcon, CpuIcon, TrophyIcon, BellIcon,
+  UserCheckIcon, SettingsIcon, SearchIcon, FilterIcon, BuildingIcon
 } from '../../components/common/Icons';
+import './Landing.css';
 
 export function Landing() {
+  // State for interactive elements
   const [openFaq, setOpenFaq] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [consoleTab, setConsoleTab] = useState('overview');
+  const [selectedRole, setSelectedRole] = useState('admin');
+  const [studentCount, setStudentCount] = useState(350);
+  const [reminderSent, setReminderSent] = useState(false);
 
   // Configuration for Institute Branding
-  const instituteName = "Apni Vidya"; // Replace with your institute name
-  const instituteLogoUrl = "/logo.png"; // Replace with your logo URL if available
+  const instituteName = "Apni Vidya";
+  const instituteLogoUrl = "/logo.png";
 
   const modules = [
     {
@@ -83,7 +90,7 @@ export function Landing() {
     },
     {
       q: 'Can parents track student progress on WhatsApp?',
-      a: `Yes. ${instituteName} integrates with SMS and WhatsApp notification services to deliver automated absent notifications, test score cards, and fee payment receipts directly to registered parent mobile numbers.`
+      a: `Yes. ${instituteName} integrates with automated notifications to deliver absent alerts, test score cards, and fee payment receipts directly to registered parent WhatsApp numbers.`
     },
     {
       q: 'Do students and teachers get their own logins?',
@@ -92,596 +99,834 @@ export function Landing() {
     {
       q: 'How does fee collection work?',
       a: 'You can define custom course fees and installment plans. Parents can pay securely online via Razorpay (UPI, Google Pay, PhonePe, Cards), or you can record offline cash/cheque payments with instant PDF receipt generation.'
+    },
+    {
+      q: 'How fast can our institute get started?',
+      a: 'You can create your institute account, upload your student list or generate your admission QR code, and start taking digital attendance in less than 5 minutes.'
     }
   ];
 
+  const handleSendReminderSimulation = () => {
+    setReminderSent(true);
+    setTimeout(() => setReminderSent(false), 4000);
+  };
+
+  // ROI dynamic calculations
+  const hoursSavedPerMonth = Math.round(studentCount * 0.12);
+  const revenueLeakagePrevented = (studentCount * 380).toLocaleString('en-IN');
+  const paperSavingsPerMonth = (studentCount * 40).toLocaleString('en-IN');
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#0f172a', fontFamily: 'var(--font-sans, sans-serif)', overflowX: 'hidden' }}>
+    <div className="landing-page">
       
-      {/* ─── 1. MINIMALIST TOPBAR ─── */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 32px',
-        background: 'rgba(255, 255, 255, 0.90)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-        boxShadow: '0 4px 20px -5px rgba(15, 23, 42, 0.05)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* ─── 1. ULTRA-RESPONSIVE TOPBAR ─── */}
+      <header className="landing-header">
+        <Link to="/" className="landing-brand" aria-label="Home">
           {instituteLogoUrl ? (
-            <div style={{ height: 44, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-              <img src={instituteLogoUrl} alt="Institute Logo" style={{ height: 72, width: 'auto', objectFit: 'contain' }} />
+            <div className="landing-logo-box">
+              <img src={instituteLogoUrl} alt={instituteName} className="landing-logo-img" />
             </div>
           ) : (
             <>
-              <div style={{
-                width: 40, height: 40, borderRadius: 12,
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-              }}>
+              <div className="landing-brand-icon">
                 <GraduationCapIcon size={22} color="#fff" />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <span style={{ 
-                  fontSize: instituteName.length > 15 ? 16 : 22, 
-                  fontWeight: 900, 
-                  fontFamily: 'var(--font-heading, sans-serif)', 
-                  color: '#0f172a', 
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.1,
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
-                  maxWidth: '200px'
-                }}>
-                  {instituteName}
-                </span>
-              </div>
+              <span className="landing-brand-name">
+                {instituteName}
+              </span>
             </>
           )}
-        </div>
+        </Link>
 
         {/* Desktop Navigation Quick-Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 24 }} className="desktop-only">
-          <a href="#features" style={{ fontSize: 14, fontWeight: 600, color: '#475569', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#2563eb'} onMouseLeave={e => e.currentTarget.style.color = '#475569'}>Modules</a>
-          <a href="#security" style={{ fontSize: 14, fontWeight: 600, color: '#475569', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#2563eb'} onMouseLeave={e => e.currentTarget.style.color = '#475569'}>Security</a>
-          <a href="#faq" style={{ fontSize: 14, fontWeight: 600, color: '#475569', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#2563eb'} onMouseLeave={e => e.currentTarget.style.color = '#475569'}>FAQ</a>
+        <nav className="landing-nav desktop-only">
+          <a href="#console">Live Demo</a>
+          <a href="#roles">Portals</a>
+          <a href="#calculator">ROI Calculator</a>
+          <a href="#features">Features</a>
+          <a href="#faq">FAQ</a>
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link to="/login" className="btn hover-lift" style={{ 
-            background: '#ffffff', 
-            color: '#1e293b', 
-            border: '1.5px solid #cbd5e1', 
-            fontWeight: 700, 
-            fontSize: 14, 
-            height: 40, 
-            padding: '0 20px', 
-            borderRadius: 10,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
-          }}>
+        {/* Action Buttons */}
+        <div className="landing-header-actions">
+          <Link to="/login" className="landing-signin-btn hover-lift">
             Sign In
           </Link>
-          <Link to="/signup" className="btn hover-lift" style={{ 
-            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', 
-            color: '#ffffff', 
-            fontWeight: 800, 
-            fontSize: 14, 
-            height: 40, 
-            padding: '0 22px', 
-            borderRadius: 10, 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 8,
-            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
-          }}>
+          <Link to="/signup" className="landing-signup-btn hover-lift">
             <span>Start Free</span>
-            <ArrowRightIcon size={16} />
+            <ArrowRightIcon size={15} />
           </Link>
         </div>
       </header>
 
-      {/* ─── 2. GREENBOARD HERO SECTION (Navy Board Theme) ─── */}
-      <section style={{
-        position: 'relative',
-        padding: '90px 20px 90px',
-        textAlign: 'center',
-        backgroundImage: 'url(/greenboard_texture.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        color: '#ffffff',
-        borderBottom: '4px solid #2563eb',
-        boxShadow: 'inset 0 0 120px rgba(0,0,0,0.85)',
-        overflow: 'hidden'
-      }}>
-        {/* Deep navy overlay + radial lighting */}
-        <div style={{ 
-          position: 'absolute', 
-          inset: 0, 
-          background: 'radial-gradient(circle at 50% 15%, rgba(37, 99, 235, 0.45) 0%, rgba(10, 24, 60, 0.92) 65%, rgba(6, 14, 38, 0.98) 100%)' 
-        }}></div>
-
-        {/* Ambient background glow dots */}
-        <div style={{ position: 'absolute', top: '10%', left: '8%', width: 280, height: 280, borderRadius: '50%', background: 'rgba(37, 99, 235, 0.15)', filter: 'blur(80px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '15%', right: '8%', width: 320, height: 320, borderRadius: '50%', background: 'rgba(251, 191, 36, 0.12)', filter: 'blur(90px)', pointerEvents: 'none' }} />
+      {/* ─── 2. STATE-OF-THE-ART HERO SECTION ─── */}
+      <section className="landing-hero">
+        <div className="landing-hero-grid-pattern" />
+        <div className="landing-hero-glow-1" />
+        <div className="landing-hero-glow-2" />
         
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1040, margin: '0 auto' }}>
+        <div className="landing-hero-container">
           
           {/* Badge */}
-          <div style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: 10, 
-            padding: '8px 22px', 
-            borderRadius: 30, 
-            background: 'rgba(255,255,255,0.12)', 
-            border: '1px solid rgba(255,255,255,0.25)', 
-            color: '#e2e8f0', 
-            fontSize: 13, 
-            fontWeight: 700, 
-            marginBottom: 28, 
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-          }}>
-            <span style={{ display: 'flex', width: 8, height: 8, borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 10px #fbbf24' }}></span>
-            <AwardIcon size={16} color="#fbbf24" />
-            <span style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}>Upgrade your Institute with the power of A</span>
+          <div className="landing-hero-badge">
+            <span className="landing-live-pulse" />
+            <AwardIcon size={15} color="#fbbf24" />
+            <span>Upgrade your Institute with the power of AI</span>
           </div>
 
           {/* Heading */}
-          <h1 style={{ 
-            fontSize: 'clamp(2.8rem, 6vw, 4.6rem)', 
-            fontWeight: 900, 
-            lineHeight: 1.12, 
-            letterSpacing: '-0.035em', 
-            marginBottom: 24, 
-            fontFamily: 'var(--font-heading, serif)', 
-            textShadow: '0 6px 20px rgba(0,0,0,0.6)' 
-          }}>
-            Your Institute.<br/>
-            <span style={{ 
-              color: '#fbbf24', 
-              textShadow: '0 2px 16px rgba(251, 191, 36, 0.4)',
-              background: 'linear-gradient(135deg, #fef08a 0%, #fbbf24 60%, #f59e0b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              display: 'inline-block'
-            }}>
+          <h1 className="landing-hero-title">
+            Your Institute.<br />
+            <span className="landing-hero-title-highlight">
               Reimagined for the Future.
             </span>
           </h1>
 
           {/* Paragraph */}
-          <p style={{ 
-            fontSize: 'clamp(1.1rem, 2.3vw, 1.28rem)', 
-            color: '#e2e8f0', 
-            lineHeight: 1.65, 
-            maxWidth: 760, 
-            margin: '0 auto 20px', 
-            fontWeight: 500, 
-            textShadow: '0 2px 6px rgba(0,0,0,0.6)' 
-          }}>
+          <p className="landing-hero-desc">
             You focus on teaching. We simplify everything else. From student onboarding to fees, attendance, exams, performance and communication—run your entire institute from one intelligent platform designed to save time, reduce leakage and accelerate growth.
           </p>
-          <p style={{ 
-            fontSize: '1.25rem', 
-            color: '#fbbf24', 
-            fontWeight: 800, 
-            marginBottom: 36, 
-            textShadow: '0 2px 8px rgba(0,0,0,0.6)',
-            letterSpacing: '0.01em'
-          }}>
+          <p className="landing-hero-tagline">
             Run Smarter. Save More. Grow Faster.
           </p>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 50 }}>
-            <Link to="/signup" className="btn hover-lift" style={{ 
-              background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', 
-              color: '#0f172a', 
-              fontWeight: 900, 
-              height: 56, 
-              fontSize: 16, 
-              padding: '0 36px', 
-              borderRadius: 14, 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: 10, 
-              boxShadow: '0 10px 30px rgba(251, 191, 36, 0.35)',
-              border: '1px solid rgba(255,255,255,0.4)'
-            }}>
-              Create Free Account <ArrowRightIcon size={18} />
+          <div className="landing-hero-ctas">
+            <Link to="/signup" className="landing-cta-primary hover-lift">
+              <span>Start Free 14-Day Trial</span>
+              <ArrowRightIcon size={18} />
             </Link>
-            <Link to="/login" className="btn hover-lift" style={{ 
-              background: 'rgba(255,255,255,0.12)', 
-              color: '#ffffff', 
-              border: '1.5px solid rgba(255,255,255,0.35)', 
-              fontWeight: 700, 
-              height: 56, 
-              fontSize: 16, 
-              padding: '0 32px', 
-              borderRadius: 14, 
-              backdropFilter: 'blur(12px)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
-            }}>
-              Sign In To Portal
-            </Link>
+            <a href="#console" className="landing-cta-secondary hover-lift">
+              <span>Explore Live Console</span>
+              <ChevronRightIcon size={18} />
+            </a>
           </div>
 
-          {/* ─── LIVE PRODUCT SHOWCASE / MOCKUP CARD ─── */}
-          <div style={{
-            maxWidth: 880,
-            margin: '0 auto',
-            background: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: 20,
-            padding: '24px 28px',
-            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(37, 99, 235, 0.25)',
-            textAlign: 'left'
-          }}>
-            {/* Topbar of the Mockup */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 16, marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-                <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
-                <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginLeft: 12, letterSpacing: '0.03em' }}>
-                  {instituteName} Management Console • v2.4 Live
+          {/* Trust Bullets */}
+          <div className="landing-trust-bullets">
+            <div className="landing-trust-bullet-item">
+              <span className="landing-trust-check">✓</span>
+              <span>No Credit Card Required</span>
+            </div>
+            <div className="landing-trust-bullet-item">
+              <span className="landing-trust-check">✓</span>
+              <span>5-Minute Setup</span>
+            </div>
+            <div className="landing-trust-bullet-item">
+              <span className="landing-trust-check">✓</span>
+              <span>WhatsApp & UPI Integrated</span>
+            </div>
+          </div>
+
+          {/* ─── 3. INTERACTIVE HERO ERP CONSOLE SHOWCASE ─── */}
+          <div id="console" className="landing-console-frame">
+            
+            {/* Window Header with Mac Controls + Interactive View Tabs */}
+            <div className="landing-console-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="landing-window-controls">
+                  <span className="landing-traffic-dot" style={{ background: '#ef4444' }} />
+                  <span className="landing-traffic-dot" style={{ background: '#f59e0b' }} />
+                  <span className="landing-traffic-dot" style={{ background: '#10b981' }} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', letterSpacing: '0.02em' }} className="desktop-only">
+                  {instituteName} Command Center
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(37, 99, 235, 0.25)', border: '1px solid rgba(37, 99, 235, 0.4)', fontSize: 11, fontWeight: 700, color: '#93c5fd' }}>
-                  ⚡ System Operational
-                </span>
-              </div>
-            </div>
 
-            {/* Metric Pills Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>
-              <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginBottom: 4 }}>Today's Attendance</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  98.4% <span style={{ fontSize: 11, color: '#34d399', fontWeight: 700 }}>+2.1%</span>
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginBottom: 4 }}>Active Students</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  1,240 <span style={{ fontSize: 11, color: '#38bdf8', fontWeight: 700 }}>QR Onboarded</span>
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginBottom: 4 }}>Fees Collected (Aug)</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#34d399', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  ₹4,82,500 <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700 }}>Razorpay Auto</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Interactive Simulation Strip */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '10px 16px', background: 'rgba(37, 99, 235, 0.15)', borderRadius: 10, border: '1px solid rgba(37, 99, 235, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#dbeafe', fontWeight: 600 }}>
-                <ClockIcon size={16} color="#60a5fa" />
-                <span>Next Scheduled Exam: <strong>Class 12 Physics Mock #3</strong></span>
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 800, color: '#fbbf24', background: 'rgba(251, 191, 36, 0.15)', padding: '2px 10px', borderRadius: 6 }}>
-                Auto-Grading Ready
-              </span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ─── 3. PLATFORM STATISTICS (Trust Section) ─── */}
-      <section style={{ 
-        padding: '50px 20px', 
-        background: '#0a1532', 
-        color: '#ffffff',
-        borderBottom: '1px solid rgba(255,255,255,0.08)'
-      }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 32, alignItems: 'center' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, background: 'rgba(255,255,255,0.04)', padding: '18px 22px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(37, 99, 235, 0.2)', border: '1px solid rgba(37, 99, 235, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <UsersIcon size={24} color="#60a5fa" />
-            </div>
-            <div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#3b82f6', lineHeight: 1 }}>500+</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Institutes Enrolled</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, background: 'rgba(255,255,255,0.04)', padding: '18px 22px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(251, 191, 36, 0.2)', border: '1px solid rgba(251, 191, 36, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <TrendingUpIcon size={24} color="#fbbf24" />
-            </div>
-            <div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>2M+</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Attendance Records</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, background: 'rgba(255,255,255,0.04)', padding: '18px 22px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(96, 165, 250, 0.2)', border: '1px solid rgba(96, 165, 250, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ShieldIcon size={24} color="#60a5fa" />
-            </div>
-            <div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#60a5fa', lineHeight: 1 }}>100%</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Secure & Encrypted</div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ─── 4. NOTEBOOK CORE FEATURES ─── */}
-      <section id="features" style={{ 
-        padding: '100px 20px 90px', 
-        backgroundImage: 'url(/notebook_pattern.jpg)',
-        backgroundSize: '400px',
-        backgroundRepeat: 'repeat',
-        position: 'relative'
-      }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(248,250,252,0.7) 0%, rgba(255,255,255,0.92) 100%)', pointerEvents: 'none' }} />
-        
-        <div style={{ maxWidth: 1180, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 20, background: '#dbeafe', color: '#1e40af', fontSize: 13, fontWeight: 800, marginBottom: 16 }}>
-              <span>🚀 All-In-One Toolkit</span>
-            </div>
-            <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', fontWeight: 900, fontFamily: 'var(--font-heading, serif)', letterSpacing: '-0.025em', color: '#0f172a', marginBottom: 16 }}>
-              Engineered For Modern Institutes
-            </h2>
-            <p style={{ color: '#475569', fontSize: 18, maxWidth: 680, margin: '0 auto', lineHeight: 1.6, fontWeight: 500 }}>
-              Built specifically to solve real administrative bottlenecks in coaching centers, academies, and private schools. Professional tools, beautifully organized.
-            </p>
-
-            {/* Interactive Module Categories */}
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 32, flexWrap: 'wrap' }}>
-              {[
-                { id: 'all', label: 'All Modules' },
-                { id: 'admissions', label: 'Admissions' },
-                { id: 'operations', label: 'Operations' },
-                { id: 'academics', label: 'Exams & Vault' },
-                { id: 'finance', label: 'Fees & Invoicing' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: 30,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    background: activeTab === tab.id ? '#2563eb' : '#ffffff',
-                    color: activeTab === tab.id ? '#ffffff' : '#64748b',
-                    border: activeTab === tab.id ? '1.5px solid #2563eb' : '1.5px solid #e2e8f0',
-                    boxShadow: activeTab === tab.id ? '0 4px 14px rgba(37, 99, 235, 0.3)' : '0 2px 6px rgba(0,0,0,0.02)'
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Cards Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 28 }}>
-            {filteredModules.map((m) => {
-              const Icon = m.icon;
-              return (
-                <div 
-                  key={m.id} 
-                  className="hover-lift" 
-                  style={{ 
-                    background: '#ffffff', 
-                    border: '1px solid #e2e8f0', 
-                    borderRadius: 18, 
-                    padding: '36px 30px', 
-                    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.04)', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    position: 'relative', 
-                    overflow: 'hidden',
-                    transition: 'all 0.25s ease'
-                  }}
-                >
-                  {/* Glowing Top Accent Strip */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: m.accent }} />
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <div style={{ 
-                      width: 58, 
-                      height: 58, 
-                      borderRadius: 16, 
-                      background: `${m.accent}15`, 
-                      border: `1.5px solid ${m.accent}30`, 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      boxShadow: `0 4px 12px ${m.accent}20`
-                    }}>
-                      <Icon size={28} color={m.accent} />
-                    </div>
-                    {m.badge && (
-                      <span style={{ 
-                        fontSize: 11, 
-                        fontWeight: 800, 
-                        color: m.accent, 
-                        background: `${m.accent}12`, 
-                        border: `1px solid ${m.accent}25`, 
-                        padding: '4px 12px', 
-                        borderRadius: 20, 
-                        letterSpacing: '0.02em',
-                        textTransform: 'uppercase'
-                      }}>
-                        {m.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 style={{ fontSize: 21, fontWeight: 900, marginBottom: 12, color: '#0f172a', letterSpacing: '-0.015em' }}>
-                      {m.title}
-                    </h3>
-                    <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.65 }}>
-                      {m.desc}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 5. SECURITY & RELIABILITY ─── */}
-      <section id="security" style={{ background: '#ffffff', padding: '100px 20px', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 48, alignItems: 'center' }}>
-            <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', fontSize: 13, fontWeight: 800, marginBottom: 16 }}>
-                <ShieldIcon size={16} color="#2563eb" />
-                <span>Enterprise Grade Security</span>
-              </div>
-              <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.9rem)', fontWeight: 900, fontFamily: 'var(--font-heading, serif)', letterSpacing: '-0.02em', color: '#0f172a', marginBottom: 20, lineHeight: 1.2 }}>
-                Secure, Reliable & Cloud-Backed
-              </h2>
-              <p style={{ color: '#475569', fontSize: 16, lineHeight: 1.65, marginBottom: 28 }}>
-                We treat your data with the highest level of security. Every institute operates in a strictly isolated workspace to guarantee privacy and integrity.
-              </p>
-              
-              <div style={{ display: 'grid', gap: 16 }}>
+              {/* View Switcher Tabs */}
+              <div className="landing-console-tabs">
                 {[
-                  'Granular Role-Based Access Control (RBAC)',
-                  'Secure JWT session authentication',
-                  'Encrypted database & daily automated backups',
-                  'Razorpay PCI-DSS verified payments integration',
-                ].map(b => (
-                  <div key={b} style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#f8fafc', padding: '10px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)' }}>
-                      <CheckCircleIcon size={14} color="#fff" />
-                    </div>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>{b}</span>
-                  </div>
-                ))}
+                  { id: 'overview', label: '📊 Live Attendance', icon: TrendingUpIcon },
+                  { id: 'admissions', label: '📲 QR Admissions', icon: UsersIcon },
+                  { id: 'exams', label: '📝 AI Exams', icon: AwardIcon },
+                  { id: 'fees', label: '💳 Fee Invoicing', icon: CurrencyIcon },
+                  { id: 'timetable', label: '📅 Timetable', icon: CalendarIcon }
+                ].map(tab => {
+                  const TabIcon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setConsoleTab(tab.id)}
+                      className={`landing-console-tab-btn ${consoleTab === tab.id ? 'active' : ''}`}
+                    >
+                      <TabIcon size={14} />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* High-Tech Security Card */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #0a1532 0%, #0f172a 100%)', 
-              border: '1px solid rgba(255, 255, 255, 0.12)', 
-              borderRadius: 24, 
-              padding: 38, 
-              boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
-              color: '#ffffff',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(37, 99, 235, 0.25)', filter: 'blur(50px)' }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
-                <div style={{ width: 60, height: 60, borderRadius: 18, background: 'rgba(37, 99, 235, 0.2)', border: '1.5px solid rgba(37, 99, 235, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ShieldIcon size={32} color="#60a5fa" />
-                </div>
+            {/* Console Interactive Body */}
+            <div className="landing-console-body">
+              
+              {/* TAB 1: OVERVIEW & ATTENDANCE */}
+              {consoleTab === 'overview' && (
                 <div>
-                  <div style={{ fontWeight: 900, fontSize: 20, color: '#ffffff' }}>Data Integrity</div>
-                  <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>Your institute data stays strictly yours</div>
-                </div>
-              </div>
+                  <div className="landing-metrics-row">
+                    <div className="landing-metric-box">
+                      <div className="landing-metric-label">Today's Batch Attendance</div>
+                      <div className="landing-metric-val" style={{ color: '#60a5fa' }}>
+                        98.4% 
+                        <span className="landing-metric-badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
+                          +2.4% vs last week
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>
+                        48/50 Present in <strong>Class 12 IIT-JEE</strong>
+                      </div>
+                    </div>
 
-              {/* Status Indicator */}
-              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>Cloud Workspace Isolation</span>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#34d399' }}>Active & Protected</span>
-                </div>
-                <div style={{ width: '100%', height: 6, borderRadius: 10, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(90deg, #2563eb, #34d399)' }} />
-                </div>
-              </div>
+                    <div className="landing-metric-box">
+                      <div className="landing-metric-label">Active Enrolled Students</div>
+                      <div className="landing-metric-val" style={{ color: '#fbbf24' }}>
+                        1,240
+                        <span className="landing-metric-badge" style={{ background: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24' }}>
+                          100% QR Verified
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>
+                        Across 14 Active Batches
+                      </div>
+                    </div>
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {['RBAC Secured', 'Encrypted DB', 'Razorpay Verified', 'JWT Protected'].map(t => (
-                  <span key={t} style={{ 
-                    padding: '8px 16px', 
-                    borderRadius: 10, 
-                    background: 'rgba(37, 99, 235, 0.15)', 
-                    color: '#93c5fd', 
-                    fontSize: 13, 
-                    fontWeight: 800, 
-                    border: '1px solid rgba(37, 99, 235, 0.35)' 
+                    <div className="landing-metric-box">
+                      <div className="landing-metric-label">August Fee Collections</div>
+                      <div className="landing-metric-val" style={{ color: '#34d399' }}>
+                        ₹4,82,500
+                        <span className="landing-metric-badge" style={{ background: 'rgba(37, 99, 235, 0.2)', color: '#93c5fd' }}>
+                          Auto UPI Settle
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>
+                        ₹38,000 pending across 6 students
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Stream / WhatsApp Simulation Strip */}
+                  <div className="landing-feed-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <div className="landing-whatsapp-pill">
+                        <span>💬 WhatsApp Live Alert</span>
+                      </div>
+                      <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        Parent of <strong>Aarav Sharma (Class 12)</strong> notified of on-time attendance at 08:30 AM.
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 12, color: '#34d399', fontWeight: 800, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                      Delivered Instantly
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: QR ADMISSIONS */}
+              {consoleTab === 'admissions' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
+                    <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                        📲 Custom Institute QR Code
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 80, height: 80, background: '#ffffff', borderRadius: 10, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {/* Simulated QR Pattern */}
+                          <div style={{ width: '100%', height: '100%', border: '4px dashed #1e3a8a', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#1e3a8a' }}>
+                            QR SCAN
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff' }}>Self-Onboarding Link</div>
+                          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Place on reception desk, flyers, or Instagram bio</div>
+                          <div style={{ fontSize: 11, color: '#60a5fa', fontWeight: 700, marginTop: 6 }}>apnividya.in/enroll/apex-academy</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                        ⚡ Real-Time Applicant Queue
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.25)', padding: '8px 12px', borderRadius: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>Rohan Verma</div>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Class 11 Physics • Scanned 2m ago</div>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 800, background: '#2563eb', color: '#fff', padding: '4px 10px', borderRadius: 6 }}>
+                            1-Click Approve
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.25)', padding: '8px 12px', borderRadius: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>Ananya Iyer</div>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Class 12 Chemistry • Enrolled</div>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 800, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '4px 10px', borderRadius: 6 }}>
+                            ✓ Active
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: AI EXAMS & SWOT */}
+              {consoleTab === 'exams' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
+                    <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fbbf24' }}>LIVE TEST EVALUATION</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#34d399', background: 'rgba(16, 185, 129, 0.2)', padding: '2px 8px', borderRadius: 4 }}>Auto-Graded</span>
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', marginBottom: 4 }}>Class 12 Physics Mock #4</div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>45 Students submitted • Average Score: 78.5%</div>
+                      
+                      {/* Mini Leaderboard preview */}
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', background: 'rgba(251, 191, 36, 0.15)', padding: '4px 8px', borderRadius: 6 }}>🥇 Priya S. (98%)</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', background: 'rgba(255, 255, 255, 0.1)', padding: '4px 8px', borderRadius: 6 }}>🥈 Dev K. (94%)</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', background: 'rgba(217, 119, 6, 0.15)', padding: '4px 8px', borderRadius: 6 }}>🥉 Amit R. (91%)</span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(37, 99, 235, 0.15)', border: '1px solid rgba(37, 99, 235, 0.35)', borderRadius: 14, padding: 18 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: '#93c5fd', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <CpuIcon size={16} color="#60a5fa" />
+                        <span>AI SWOT Topic Weakness Intelligence</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.5, marginBottom: 12 }}>
+                        "62% of students in Batch JEE-A scored incorrectly on <strong>Electromagnetic Induction</strong> questions."
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: 8, fontSize: 11.5, color: '#38bdf8', fontWeight: 600 }}>
+                        💡 AI Action: Auto-generated 15 remedial practice questions for Batch JEE-A.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SMART FEE INVOICING */}
+              {consoleTab === 'fees' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16, marginBottom: 14 }}>
+                    <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Automated Fee Recovery Rate</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: '#34d399', margin: '4px 0' }}>94.2% Collected</div>
+                      <div style={{ fontSize: 12, color: '#cbd5e1' }}>Direct UPI receipts with instant PDF generation</div>
+                    </div>
+
+                    <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 18 }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Pending Dues Across Batches</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', margin: '4px 0' }}>6 Students Pending</div>
+                      <div style={{ fontSize: 12, color: '#cbd5e1' }}>Automated WhatsApp reminder queue ready</div>
+                    </div>
+                  </div>
+
+                  <div className="landing-feed-card" style={{ background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.25)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CurrencyIcon size={18} color="#fbbf24" />
+                      <span style={{ fontSize: 13, color: '#fef3c7', fontWeight: 600 }}>
+                        {reminderSent ? "✓ Dispatched 6 WhatsApp payment links via Razorpay!" : "6 parents have pending installment due this Friday."}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={handleSendReminderSimulation}
+                      style={{ 
+                        background: reminderSent ? '#10b981' : '#fbbf24', 
+                        color: '#0f172a', 
+                        fontWeight: 800, 
+                        fontSize: 12, 
+                        padding: '6px 14px', 
+                        borderRadius: 8, 
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {reminderSent ? "Sent Successfully ✓" : "📲 Send 1-Click WhatsApp Reminders"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: TIMETABLE & CLASH-DETECTION */}
+              {consoleTab === 'timetable' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>Today's Interactive Batch Schedule</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#34d399', background: 'rgba(16, 185, 129, 0.2)', padding: '2px 8px', borderRadius: 4 }}>
+                      ✓ 0 Room & Teacher Clashes
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(37, 99, 235, 0.2)', border: '1px solid rgba(37, 99, 235, 0.4)', padding: '10px 14px', borderRadius: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#93c5fd' }}>09:00 - 10:30 AM</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>Class 12 Physics (Dr. Verma)</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>Main Hall Room 101 • IIT-JEE Batch</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#34d399', background: 'rgba(16, 185, 129, 0.2)', padding: '3px 8px', borderRadius: 6 }}>
+                        ● Live In-Progress
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '10px 14px', borderRadius: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8' }}>11:00 - 12:30 PM</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>Class 11 Organic Chemistry (Prof. Gupta)</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>Science Lab 2 • NEET Batch</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>
+                        Upcoming Next
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── 4. STAKEHOLDER PORTALS (Role-Based Features) ─── */}
+      <section id="roles" className="landing-roles-section">
+        <div className="landing-section-header">
+          <div className="landing-section-tag">
+            <span>👥 Unified Ecosystem</span>
+          </div>
+          <h2 className="landing-section-title">
+            Tailored Experiences For Every Stakeholder
+          </h2>
+          <p className="landing-section-subtitle">
+            A single connected platform that eliminates silos between management, faculty, students, and parents.
+          </p>
+        </div>
+
+        <div className="landing-roles-grid">
+          
+          {/* Role 1: Institute Directors */}
+          <div className="landing-role-card">
+            <div className="landing-role-icon" style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb' }}>
+              <BuildingIcon size={28} color="#2563eb" />
+            </div>
+            <h3 className="landing-role-title">Institute Directors</h3>
+            <p className="landing-role-desc">
+              Total operational visibility, automated fee recovery, teacher performance tracking, and growth analytics.
+            </p>
+            <div className="landing-role-bullets">
+              <div>✓ Real-time revenue & pending dues ledger</div>
+              <div>✓ Multi-branch & batch oversight</div>
+              <div>✓ Automated WhatsApp attendance dispatches</div>
+            </div>
+          </div>
+
+          {/* Role 2: Faculty & Teachers */}
+          <div className="landing-role-card">
+            <div className="landing-role-icon" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}>
+              <GraduationCapIcon size={28} color="#0284c7" />
+            </div>
+            <h3 className="landing-role-title">Teachers & Faculty</h3>
+            <p className="landing-role-desc">
+              Take 10-second batch attendance, build test question banks, upload lecture notes, and track student weaknesses.
+            </p>
+            <div className="landing-role-bullets">
+              <div>✓ 1-Tap batch digital attendance register</div>
+              <div>✓ Auto-graded objective & subjective tests</div>
+              <div>✓ Digital study notes & video vault storage</div>
+            </div>
+          </div>
+
+          {/* Role 3: Students */}
+          <div className="landing-role-card">
+            <div className="landing-role-icon" style={{ background: 'rgba(217, 119, 6, 0.1)', color: '#d97706' }}>
+              <AwardIcon size={28} color="#d97706" />
+            </div>
+            <h3 className="landing-role-title">Students</h3>
+            <p className="landing-role-desc">
+              Dedicated student portal with mock tests, AI SWOT weakness reports, leaderboards, and timetables.
+            </p>
+            <div className="landing-role-bullets">
+              <div>✓ Full-screen test player with timer</div>
+              <div>✓ Topic-by-topic AI weakness diagnostics</div>
+              <div>✓ Attendance streaks & academic badges</div>
+            </div>
+          </div>
+
+          {/* Role 4: Parents */}
+          <div className="landing-role-card">
+            <div className="landing-role-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+              <UsersIcon size={28} color="#10b981" />
+            </div>
+            <h3 className="landing-role-title">Parents</h3>
+            <p className="landing-role-desc">
+              Unprecedented transparency with automated WhatsApp absent alerts, exam score cards, and 1-click UPI fee receipts.
+            </p>
+            <div className="landing-role-bullets">
+              <div>✓ Instant absent alerts on WhatsApp</div>
+              <div>✓ Digital exam score card deliveries</div>
+              <div>✓ Transparent installment schedules & UPI</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── 5. BEFORE VS AFTER COMPARISON ─── */}
+      <section className="landing-compare-section">
+        <div className="landing-section-header">
+          <div className="landing-section-tag" style={{ background: '#fee2e2', color: '#dc2626' }}>
+            <span>⚡ The Upgrade</span>
+          </div>
+          <h2 className="landing-section-title">
+            Why Institutes Are Replacing Outdated Systems
+          </h2>
+          <p className="landing-section-subtitle">
+            See the difference between traditional manual operations and the Apni Vidya Smart LMS.
+          </p>
+        </div>
+
+        <div className="landing-compare-grid">
+          {/* Old Way */}
+          <div className="landing-compare-card-old">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <span style={{ fontSize: 24 }}>❌</span>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: '#991b1b' }}>The Old Manual Way</h3>
+                <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>Paper Registers & Spreadsheet Chaos</span>
+              </div>
+            </div>
+
+            <div className="landing-compare-item" style={{ color: '#7f1d1d' }}>
+              <span>❌</span>
+              <span>Physical paper registers prone to loss, damage, and manual calculation errors.</span>
+            </div>
+            <div className="landing-compare-item" style={{ color: '#7f1d1d' }}>
+              <span>❌</span>
+              <span>Calling parents manually for absent students, wasting 2+ hours every morning.</span>
+            </div>
+            <div className="landing-compare-item" style={{ color: '#7f1d1d' }}>
+              <span>❌</span>
+              <span>Uncollected fee leakage and awkward phone reminders with scattered paper receipts.</span>
+            </div>
+            <div className="landing-compare-item" style={{ color: '#7f1d1d' }}>
+              <span>❌</span>
+              <span>Manual test paper checking taking days, with zero insights on student weaknesses.</span>
+            </div>
+          </div>
+
+          {/* New Way (Apni Vidya) */}
+          <div className="landing-compare-card-new">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <span style={{ fontSize: 24 }}>🚀</span>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: '#60a5fa' }}>The Apni Vidya Way</h3>
+                <span style={{ fontSize: 12, color: '#34d399', fontWeight: 700 }}>Zero Paperwork & Intelligent Automation</span>
+              </div>
+            </div>
+
+            <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
+              <span>✓</span>
+              <span><strong>10-Second QR Onboarding:</strong> Students scan QR and fill their own verified profile.</span>
+            </div>
+            <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
+              <span>✓</span>
+              <span><strong>Instant WhatsApp Alerts:</strong> Parents notified automatically the moment a student is absent.</span>
+            </div>
+            <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
+              <span>✓</span>
+              <span><strong>Automated Razorpay UPI:</strong> 1-Click payment links with automated digital tax receipts.</span>
+            </div>
+            <div className="landing-compare-item" style={{ color: '#e2e8f0' }}>
+              <span>✓</span>
+              <span><strong>AI SWOT Diagnostics:</strong> Instant auto-grading with pinpoint topic weakness intelligence.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 6. INTERACTIVE ROI & TIME-SAVINGS CALCULATOR ─── */}
+      <section id="calculator" className="landing-roi-section">
+        <div className="landing-section-header">
+          <div className="landing-section-tag">
+            <span>📈 Financial Impact</span>
+          </div>
+          <h2 className="landing-section-title">
+            Calculate Your Institute's Annual Savings
+          </h2>
+          <p className="landing-section-subtitle">
+            See how much time and uncollected revenue you will recover every single month.
+          </p>
+        </div>
+
+        <div className="landing-roi-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff' }}>Your Current Student Strength:</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24' }}>{studentCount} Students</span>
+          </div>
+
+          <input 
+            type="range" 
+            min="50" 
+            max="2000" 
+            step="25" 
+            value={studentCount}
+            onChange={(e) => setStudentCount(Number(e.target.value))}
+            className="landing-slider"
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+            <span>50 Students</span>
+            <span>500 Students</span>
+            <span>1,000 Students</span>
+            <span>2,000+ Students</span>
+          </div>
+
+          <div className="landing-roi-results-grid">
+            <div className="landing-roi-stat-box">
+              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Staff Hours Saved</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#60a5fa', margin: '6px 0' }}>
+                {hoursSavedPerMonth} Hrs/mo
+              </div>
+              <div style={{ fontSize: 11.5, color: '#cbd5e1' }}>On registers & absent phone calls</div>
+            </div>
+
+            <div className="landing-roi-stat-box">
+              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Uncollected Dues Recovered</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#34d399', margin: '6px 0' }}>
+                ₹{revenueLeakagePrevented}
+              </div>
+              <div style={{ fontSize: 11.5, color: '#cbd5e1' }}>Via automated WhatsApp UPI links</div>
+            </div>
+
+            <div className="landing-roi-stat-box">
+              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Printing & Paper Cost Saved</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#fbbf24', margin: '6px 0' }}>
+                ₹{paperSavingsPerMonth}/mo
+              </div>
+              <div style={{ fontSize: 11.5, color: '#cbd5e1' }}>100% digital receipts & forms</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 7. CORE MODULES & FEATURES SECTION ─── */}
+      <section id="features" className="landing-features-section">
+        <div className="landing-section-header">
+          <div className="landing-section-tag">
+            <span>🚀 Complete Product Suite</span>
+          </div>
+          <h2 className="landing-section-title">
+            Engineered For Modern Institutes
+          </h2>
+          <p className="landing-section-subtitle">
+            Built specifically to solve real administrative bottlenecks in coaching centers, academies, and private schools.
+          </p>
+
+          {/* Interactive Module Categories (Horizontal swipe on mobile) */}
+          <div className="landing-tabs-wrapper">
+            {[
+              { id: 'all', label: 'All Modules' },
+              { id: 'admissions', label: 'Admissions' },
+              { id: 'operations', label: 'Operations' },
+              { id: 'academics', label: 'Exams & Vault' },
+              { id: 'finance', label: 'Fees & Invoicing' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="landing-tab-btn"
+                style={{
+                  background: activeTab === tab.id ? '#2563eb' : '#ffffff',
+                  color: activeTab === tab.id ? '#ffffff' : '#64748b',
+                  border: activeTab === tab.id ? '1.5px solid #2563eb' : '1.5px solid #e2e8f0',
+                  boxShadow: activeTab === tab.id ? '0 4px 14px rgba(37, 99, 235, 0.3)' : '0 2px 6px rgba(0,0,0,0.02)'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Cards Grid */}
+        <div className="landing-modules-grid">
+          {filteredModules.map((m) => {
+            const Icon = m.icon;
+            return (
+              <div 
+                key={m.id} 
+                className="landing-module-card"
+              >
+                {/* Glowing Top Accent Strip */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: m.accent }} />
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                  <div style={{ 
+                    width: 52, 
+                    height: 52, 
+                    borderRadius: 14, 
+                    background: `${m.accent}15`, 
+                    border: `1.5px solid ${m.accent}30`, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    boxShadow: `0 4px 12px ${m.accent}20`
                   }}>
-                    {t}
-                  </span>
-                ))}
+                    <Icon size={26} color={m.accent} />
+                  </div>
+                  {m.badge && (
+                    <span style={{ 
+                      fontSize: 10.5, 
+                      fontWeight: 800, 
+                      color: m.accent, 
+                      background: `${m.accent}12`, 
+                      border: `1px solid ${m.accent}25`, 
+                      padding: '4px 10px', 
+                      borderRadius: 20, 
+                      letterSpacing: '0.02em',
+                      textTransform: 'uppercase'
+                    }}>
+                      {m.badge}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: 19, fontWeight: 900, marginBottom: 10, color: '#0f172a', letterSpacing: '-0.015em' }}>
+                    {m.title}
+                  </h3>
+                  <p style={{ color: '#475569', fontSize: 14.5, lineHeight: 1.6 }}>
+                    {m.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─── 8. DIRECTOR TESTIMONIALS (Social Proof) ─── */}
+      <section className="landing-testimonials-section">
+        <div className="landing-section-header">
+          <div className="landing-section-tag" style={{ background: '#fef3c7', color: '#b45309' }}>
+            <span>⭐ Testimonials</span>
+          </div>
+          <h2 className="landing-section-title">
+            Loved By 500+ Institute Directors
+          </h2>
+          <p className="landing-section-subtitle">
+            See how educators and academy leaders transformed their day-to-day operations with {instituteName}.
+          </p>
+        </div>
+
+        <div className="landing-testimonials-grid">
+          <div className="landing-testimonial-card">
+            <div>
+              <div style={{ color: '#fbbf24', fontSize: 18, marginBottom: 12 }}>★★★★★</div>
+              <p style={{ fontSize: 15, color: '#334155', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 20 }}>
+                "{instituteName} cut our morning attendance chaos down to under 2 minutes. Parents are thrilled getting WhatsApp score cards and payment receipts directly."
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                RK
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Rajesh Kapoor</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Director, Apex IIT-JEE Academy (650 Students)</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="landing-testimonial-card">
+            <div>
+              <div style={{ color: '#fbbf24', fontSize: 18, marginBottom: 12 }}>★★★★★</div>
+              <p style={{ fontSize: 15, color: '#334155', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 20 }}>
+                "The Razorpay UPI integration alone recovered over ₹2.4 Lakhs in pending installment dues that we used to lose track of in paper receipts."
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                SM
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Dr. Sunita Mukherjee</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Founder, Pinnacle Medical Classes (420 Students)</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="landing-testimonial-card">
+            <div>
+              <div style={{ color: '#fbbf24', fontSize: 18, marginBottom: 12 }}>★★★★★</div>
+              <p style={{ fontSize: 15, color: '#334155', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 20 }}>
+                "The AI SWOT exam evaluation gave our faculty exact insights into which physics chapters students were failing before the final board exams."
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#7c3aed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                AS
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Anand Sharma</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Principal, Vidya Mandir Science Hub (800 Students)</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── 6. FREQUENTLY ASKED QUESTIONS ─── */}
-      <section id="faq" style={{ padding: '100px 20px', maxWidth: 880, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 50 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', fontSize: 13, fontWeight: 800, marginBottom: 16 }}>
+      {/* ─── 9. FREQUENTLY ASKED QUESTIONS ─── */}
+      <section id="faq" className="landing-faq-section">
+        <div className="landing-section-header">
+          <div className="landing-section-tag">
             <span>💡 Have Questions?</span>
           </div>
-          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 900, fontFamily: 'var(--font-heading, serif)', letterSpacing: '-0.02em', color: '#0f172a', marginBottom: 12 }}>
+          <h2 className="landing-section-title">
             Frequently Asked Questions
           </h2>
-          <p style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Clear answers to common questions about {instituteName}.</p>
+          <p className="landing-section-subtitle">Clear answers to common questions about {instituteName}.</p>
         </div>
 
-        <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
           {faqs.map((faq, idx) => (
             <div 
               key={faq.q} 
               onClick={() => setOpenFaq(openFaq === idx ? null : idx)} 
-              style={{ 
-                background: openFaq === idx ? '#f8fafc' : '#ffffff', 
-                border: openFaq === idx ? '1.5px solid #2563eb' : '1px solid #e2e8f0', 
-                borderRadius: 16, 
-                padding: '24px 28px', 
-                cursor: 'pointer', 
-                boxShadow: openFaq === idx ? '0 8px 24px rgba(37, 99, 235, 0.08)' : '0 2px 10px rgba(0,0,0,0.02)', 
-                transition: 'all 0.2s' 
-              }}
+              className={`landing-faq-item ${openFaq === idx ? 'open' : ''}`}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 16.5, fontWeight: 800, color: openFaq === idx ? '#1e40af' : '#0f172a' }}>{faq.q}</span>
+                <span style={{ fontSize: 15.5, fontWeight: 800, color: openFaq === idx ? '#1e40af' : '#0f172a' }}>{faq.q}</span>
                 <span style={{ 
-                  fontSize: 20, 
+                  fontSize: 18, 
                   fontWeight: 900, 
                   color: openFaq === idx ? '#ffffff' : '#2563eb',
                   background: openFaq === idx ? '#2563eb' : '#eff6ff',
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginLeft: 16,
+                  marginLeft: 12,
                   flexShrink: 0
                 }}>
                   {openFaq === idx ? '−' : '+'}
                 </span>
               </div>
               {openFaq === idx && (
-                <p style={{ color: '#475569', fontSize: 15.5, lineHeight: 1.65, marginTop: 16, paddingTop: 16, borderTop: '1px solid #e2e8f0' }}>
+                <p style={{ color: '#475569', fontSize: 14.5, lineHeight: 1.65, marginTop: 14, paddingTop: 14, borderTop: '1px solid #e2e8f0' }}>
                   {faq.a}
                 </p>
               )}
@@ -690,65 +935,43 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── 7. CALL TO ACTION ─── */}
-      <section style={{ 
-        padding: '90px 20px', 
-        background: 'linear-gradient(135deg, #0a1532 0%, #0f172a 100%)', 
-        textAlign: 'center', 
-        color: '#ffffff',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, transparent 70%)', pointerEvents: 'none' }} />
-
-        <div style={{ maxWidth: 740, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', fontWeight: 900, marginBottom: 20, fontFamily: 'var(--font-heading, serif)', color: '#ffffff', letterSpacing: '-0.025em' }}>
-            Ready to Modernize?
+      {/* ─── 10. CALL TO ACTION ─── */}
+      <section className="landing-bottom-cta">
+        <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontWeight: 900, marginBottom: 18, fontFamily: 'var(--font-heading, serif)', color: '#ffffff', letterSpacing: '-0.025em' }}>
+            Ready to Digitize Your Institute?
           </h2>
-          <p style={{ fontSize: 'clamp(1.1rem, 2vw, 1.25rem)', color: '#cbd5e1', maxWidth: 580, margin: '0 auto 36px', lineHeight: 1.65 }}>
-            Set up your coaching center in minutes. Start enrolling students, taking digital attendance, and managing fees today.
+          <p style={{ fontSize: 'clamp(1.05rem, 2.2vw, 1.25rem)', color: '#cbd5e1', maxWidth: 600, margin: '0 auto 34px', lineHeight: 1.65 }}>
+            Join 500+ top institutes that automated their attendance, exams, and fee collections. Set up in less than 5 minutes.
           </p>
-          <Link to="/signup" className="btn hover-lift" style={{ 
-            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', 
-            color: '#0f172a', 
-            fontWeight: 900, 
-            height: 58, 
-            fontSize: 16.5, 
-            padding: '0 44px', 
-            borderRadius: 14, 
-            boxShadow: '0 12px 35px rgba(251, 191, 36, 0.35)', 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: 10,
-            border: '1px solid rgba(255,255,255,0.4)'
-          }}>
-            Get Started Free <ArrowRightIcon size={18} />
+          <Link to="/signup" className="landing-cta-primary hover-lift" style={{ height: 58, fontSize: 17, padding: '0 40px' }}>
+            <span>Create Free Account Now</span>
+            <ArrowRightIcon size={18} />
           </Link>
         </div>
       </section>
 
-      {/* ─── 8. FOOTER ─── */}
-      <footer style={{ padding: '48px 20px', background: '#ffffff', borderTop: '1px solid #e2e8f0', color: '#64748b', textAlign: 'center', fontSize: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 14 }}>
+      {/* ─── 11. FOOTER ─── */}
+      <footer className="landing-footer">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
           {instituteLogoUrl ? (
-            <div style={{ height: 34, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-              <img src={instituteLogoUrl} alt="Institute Logo" style={{ height: 54, width: 'auto', objectFit: 'contain' }} />
+            <div style={{ height: 32, display: 'flex', alignItems: 'center' }}>
+              <img src={instituteLogoUrl} alt={instituteName} style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
             </div>
           ) : (
             <>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <GraduationCapIcon size={18} color="#fff" />
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <GraduationCapIcon size={16} color="#fff" />
               </div>
-              <span style={{ fontWeight: 900, fontSize: 18, color: '#0f172a', fontFamily: 'var(--font-heading, sans-serif)' }}>{instituteName}</span>
+              <span style={{ fontWeight: 900, fontSize: 16, color: '#0f172a', fontFamily: 'var(--font-heading, sans-serif)' }}>{instituteName}</span>
             </>
           )}
         </div>
-        <p style={{ marginBottom: 6, fontWeight: 600, color: '#334155' }}>© {new Date().getFullYear()} {instituteName}. All rights reserved.</p>
-        <p style={{ fontSize: 13, color: '#64748b' }}>The premium management platform for coaching institutes.</p>
+        <p style={{ marginBottom: 4, fontWeight: 600, color: '#334155', fontSize: 13.5 }}>© {new Date().getFullYear()} {instituteName}. All rights reserved.</p>
+        <p style={{ fontSize: 12.5, color: '#64748b' }}>The smart test evaluation & education operating system for modern institutes.</p>
       </footer>
     </div>
   );
 }
 
 export default Landing;
-
