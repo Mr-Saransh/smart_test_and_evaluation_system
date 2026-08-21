@@ -9,6 +9,7 @@ router.get('/details/:id', authenticate, batch.getDetails);
 router.get('/:institute_id', authenticate, batch.list);
 router.put('/:id', authenticate, authorize('institute_admin'), batch.update);
 router.put('/:id/meet-link', authenticate, authorize('institute_admin', 'teacher'), batch.updateMeetLink);
+router.delete('/:id/permanent', authenticate, authorize('institute_admin'), batch.permanentRemove);
 router.delete('/:id', authenticate, authorize('institute_admin'), batch.remove);
 
 router.post('/:id/subscription/order', authenticate, authorize('institute_admin'), batch.createSubscriptionOrder);

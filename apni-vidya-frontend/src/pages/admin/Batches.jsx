@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { GET, POST, PUT, DEL, toast, payBatchSubscription } from '../../utils/api';
-import { BuildingIcon, UsersIcon, TrendingUpIcon, CurrencyIcon, UserCheckIcon } from '../../components/common/Icons';
+import { BuildingIcon, UsersIcon, TrendingUpIcon, CurrencyIcon, UserCheckIcon, TrashIcon } from '../../components/common/Icons';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Modal } from '../../components/common/Modal';
 import { SkeletonCard, SkeletonTable } from '../../components/common/Skeleton';
@@ -19,6 +19,11 @@ export function Batches() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', description: '', start_date: '', end_date: '', meet_link: '', capacity: '' });
   const [saving, setSaving] = useState(false);
+
+  // Delete Modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Detail Drawer state
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -117,7 +122,7 @@ export function Batches() {
   };
 
   const archive = async (id, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (!window.confirm('Archive this batch? It will be hidden from active lists but data is preserved.')) return;
     await DEL(`/batches/${id}`, 'Batch archived'); 
     load();
@@ -125,13 +130,40 @@ export function Batches() {
   };
 
   const restore = async (b, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     try {
       await PUT(`/batches/${b.id}`, { is_active: true }, 'Batch restored');
       load();
     } catch (err) {
       // API util already shows a toast, so we just prevent the unhandled promise rejection
       console.error(err);
+    }
+  };
+
+  const openDeleteModal = (b, e) => {
+    if (e) e.stopPropagation();
+    setBatchToDelete(b);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeletePermanent = async () => {
+    if (!batchToDelete) return;
+    setDeleting(true);
+    try {
+      await DEL(`/batches/${batchToDelete.id}/permanent`, 'Batch permanently deleted');
+      setShowDeleteModal(false);
+      setShow(false); // If edit modal was open
+      const deletedId = batchToDelete.id;
+      setBatchToDelete(null);
+      if (selectedBatch?.id === deletedId) {
+        setSelectedBatch(null);
+        setDetails(null);
+      }
+      load();
+    } catch (err) {
+      toast(err.message || 'Failed to delete batch');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -222,14 +254,22 @@ export function Batches() {
                     </h2>
                     {selectedBatch.description && <p className="muted" style={{ fontSize: '0.9rem' }}>{selectedBatch.description}</p>}
                   </div>
-                  <div className="fx" style={{ gap: 12 }}>
+                  <div className="fx fw" style={{ gap: 10 }}>
                     {selectedBatch.is_active ? (
                       <>
                         <button className="btn bs" onClick={(e) => openEdit(selectedBatch, e)}>✎ Edit Batch</button>
-                        <button className="btn bdanger" onClick={(e) => archive(selectedBatch.id, e)}>📦 Archive</button>
+                        <button className="btn bd" onClick={(e) => archive(selectedBatch.id, e)}>📦 Archive</button>
+                        <button className="btn bdanger" onClick={(e) => openDeleteModal(selectedBatch, e)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <TrashIcon size={15} /> Delete Batch
+                        </button>
                       </>
                     ) : (
-                      <button className="btn bp" onClick={(e) => restore(selectedBatch, e)}>Restore Batch</button>
+                      <>
+                        <button className="btn bp" onClick={(e) => restore(selectedBatch, e)}>Restore Batch</button>
+                        <button className="btn bdanger" onClick={(e) => openDeleteModal(selectedBatch, e)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <TrashIcon size={15} /> Delete Permanently
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -476,12 +516,24 @@ export function Batches() {
         onClose={() => setShow(false)}
         title={editing ? 'Edit Batch' : 'New Batch'}
         footer={
-          <>
-            <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
-            <button className="btn bp" onClick={save} disabled={saving}>
-              {saving ? 'Saving...' : editing ? 'Update Batch' : 'Create Batch'}
-            </button>
-          </>
+          <div className="fxb w-full" style={{ gap: 10, flexWrap: 'wrap' }}>
+            {editing ? (
+              <button 
+                type="button" 
+                className="btn bdanger" 
+                onClick={() => { setShow(false); openDeleteModal(editing); }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <TrashIcon size={15} /> Delete Batch
+              </button>
+            ) : <div />}
+            <div className="fx" style={{ gap: 10 }}>
+              <button className="btn bs" onClick={() => setShow(false)}>Cancel</button>
+              <button className="btn bp" onClick={save} disabled={saving}>
+                {saving ? 'Saving...' : editing ? 'Update Batch' : 'Create Batch'}
+              </button>
+            </div>
+          </div>
         }
       >
         <div className="field">
@@ -530,6 +582,66 @@ export function Batches() {
           <div className="field">
             <label>Google Meet Link</label>
             <input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Batch Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => !deleting && setShowDeleteModal(false)}
+        title="Delete Batch"
+        footer={
+          <div className="fxb w-full" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <button className="btn bs" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
+              Cancel
+            </button>
+            <div className="fx" style={{ gap: 10 }}>
+              {batchToDelete?.is_active && (
+                <button
+                  type="button"
+                  className="btn bd"
+                  disabled={deleting}
+                  onClick={async (e) => {
+                    setShowDeleteModal(false);
+                    await archive(batchToDelete.id, e);
+                  }}
+                >
+                  📦 Archive Instead
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn bdanger"
+                onClick={handleDeletePermanent}
+                disabled={deleting}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <TrashIcon size={16} /> {deleting ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'var(--color-error-bg)', borderRadius: 12, color: 'var(--color-error)' }}>
+            <TrashIcon size={24} style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Permanent Action</div>
+              <div style={{ fontSize: 12, opacity: 0.9 }}>This batch will be completely removed from your institute records.</div>
+            </div>
+          </div>
+
+          <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.5, margin: 0 }}>
+            Are you sure you want to delete <strong>"{batchToDelete?.name}"</strong>?
+          </p>
+
+          <div className="card" style={{ background: 'var(--bg-subtle)', padding: 14, fontSize: 13, color: 'var(--text-secondary)' }}>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              <li>Enrolled students will <strong>not</strong> be deleted; they will be unassigned so you can place them into other batches.</li>
+              <li>Past tests, attendance, and fee history tied to this batch will be cleaned up.</li>
+              {batchToDelete?.is_active && <li>If you want to keep the data history, consider <strong>Archiving</strong> instead of deleting.</li>}
+            </ul>
           </div>
         </div>
       </Modal>

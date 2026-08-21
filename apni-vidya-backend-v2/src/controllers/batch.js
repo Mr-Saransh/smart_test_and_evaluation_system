@@ -99,12 +99,14 @@ async function update(req, res, next) {
   }
 }
 
-// Soft-delete a batch (archive).
+// Delete or Archive a batch.
 async function remove(req, res, next) {
   try {
     const { id } = req.params;
+    const { permanent } = req.query;
+
     const batch = await db.query(
-      `SELECT b.id FROM batches b
+      `SELECT b.id, b.institute_id, b.name FROM batches b
        JOIN institutes i ON b.institute_id = i.id
        WHERE b.id = $1 AND i.admin_id = $2`,
       [id, req.user.id]
@@ -112,11 +114,42 @@ async function remove(req, res, next) {
     if (batch.rows.length === 0) {
       return res.status(404).json({ error: 'Batch not found or not authorized' });
     }
+
+    if (permanent === 'true' || permanent === '1') {
+      // Unlink students from this batch to preserve student records
+      await db.query('UPDATE students SET batch_id = NULL WHERE batch_id = $1', [id]);
+      await db.query('DELETE FROM batches WHERE id = $1', [id]);
+      return res.json({ message: 'Batch permanently deleted', id });
+    }
+
     const result = await db.query(
       `UPDATE batches SET is_active = false, updated_at = now() WHERE id = $1 RETURNING *`,
       [id]
     );
     res.json({ message: 'Batch archived', batch: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Permanent hard delete endpoint
+async function permanentRemove(req, res, next) {
+  try {
+    const { id } = req.params;
+    const batch = await db.query(
+      `SELECT b.id, b.institute_id, b.name FROM batches b
+       JOIN institutes i ON b.institute_id = i.id
+       WHERE b.id = $1 AND i.admin_id = $2`,
+      [id, req.user.id]
+    );
+    if (batch.rows.length === 0) {
+      return res.status(404).json({ error: 'Batch not found or not authorized' });
+    }
+
+    // Unlink students from this batch before deleting
+    await db.query('UPDATE students SET batch_id = NULL WHERE batch_id = $1', [id]);
+    await db.query('DELETE FROM batches WHERE id = $1', [id]);
+    res.json({ message: 'Batch permanently deleted', id });
   } catch (err) {
     next(err);
   }
@@ -428,4 +461,4 @@ async function verifySubscription(req, res, next) {
   }
 }
 
-module.exports = { create, list, listAll, update, remove, getDetails, updateMeetLink, createSubscriptionOrder, verifySubscription };
+module.exports = { create, list, listAll, update, remove, permanentRemove, getDetails, updateMeetLink, createSubscriptionOrder, verifySubscription };
