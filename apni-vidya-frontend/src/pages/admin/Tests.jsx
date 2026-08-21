@@ -503,7 +503,7 @@ export function Tests() {
 
       {/* Batch Analytics & Question Quality Drawer */}
       {selectedTest && (
-        <div className="glass-panel animate-fade-in detail-drawer" style={{ width: 480, maxHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
+        <div className="glass-panel animate-fade-in detail-drawer" style={{ maxHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div className="fxb" style={{ padding: 20, background: 'var(--gradient-brand)', color: '#fff' }}>
             <div>
@@ -744,25 +744,35 @@ export function Tests() {
         className="modal-xl"
         footer={
           createStep === 'input' ? (
-            <div className="fxb w-full">
-              <button className="btn bs" onClick={() => setShowCreateModal(false)}>Cancel</button>
-              <button className="btn bp" onClick={handleStartExtraction} disabled={isExtracting} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <div className="fxb w-full" style={{ gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn bs" onClick={() => setShowCreateModal(false)} style={{ flex: '1 1 100px' }}>
+                Cancel
+              </button>
+              <button
+                className="btn bp"
+                onClick={handleStartExtraction}
+                disabled={isExtracting}
+                style={{ flex: '2 1 180px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
                 <SparklesIcon size={16} /> {isExtracting ? 'Extracting Questions...' : 'Process Document & Review'}
               </button>
             </div>
           ) : (
-            <div className="fxb w-full">
-              <button className="btn bs" onClick={() => setCreateStep('input')}>← Back to Upload</button>
-              <div className="fx" style={{ gap: 12 }}>
+            <div className="fxb w-full" style={{ gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn bs" onClick={() => setCreateStep('input')} style={{ flex: '1 1 120px' }}>
+                ← Back to Upload
+              </button>
+              <div className="fx fw" style={{ gap: 10, flex: '2 1 200px', justifyContent: 'flex-end' }}>
                 {!reviewStats.canPublish && (
-                  <span style={{ fontSize: 13, color: 'var(--color-warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <AlertTriangleIcon size={16} /> {reviewStats.needsReview} unanswered or invalid question(s)
+                  <span style={{ fontSize: 12, color: 'var(--color-warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <AlertTriangleIcon size={14} /> {reviewStats.needsReview} unanswered / invalid
                   </span>
                 )}
                 <button
                   className="btn bp"
                   onClick={handlePublishTest}
                   disabled={savingTest || !reviewStats.canPublish}
+                  style={{ flex: '1 1 140px', justifyContent: 'center' }}
                 >
                   {savingTest ? 'Saving Test...' : 'Save & Launch Test'}
                 </button>
@@ -773,48 +783,50 @@ export function Tests() {
       >
         {createStep === 'input' ? (
           /* STEP 1: INPUT SOURCE & BASIC CONFIG */
-          <div className="fx" style={{ flexDirection: 'column', gap: 20 }}>
-            <div className="fx fw" style={{ gap: 16 }}>
-              <div className="field" style={{ flex: 2, minWidth: 200 }}>
+          <div className="fx" style={{ flexDirection: 'column', gap: 18, width: '100%' }}>
+            {/* Primary Details Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, width: '100%' }}>
+              <div className="field" style={{ gridColumn: '1 / -1' }}>
                 <label>Test Title *</label>
                 <input className="inp" value={testForm.title} onChange={setF('title')} placeholder="e.g. Physics Weekly Assessment" />
               </div>
-              <div className="field" style={{ flex: 1, minWidth: 150 }}>
+              <div className="field">
                 <label>Assign Batch *</label>
                 <select className="sel w-full" value={testForm.batch_id} onChange={setF('batch_id')}>
                   <option value="" disabled>Select Batch</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
-              <div className="field" style={{ flex: 1, minWidth: 120 }}>
+              <div className="field">
                 <label>Subject</label>
                 <input className="inp" value={testForm.subject} onChange={setF('subject')} placeholder="e.g. Mathematics" />
               </div>
             </div>
 
-            <div className="fx fw" style={{ gap: 16 }}>
-              <div className="field" style={{ flex: 1 }}>
-                <label>Duration (Minutes)</label>
+            {/* Test Numerical Parameters: Fluid 2x2 or 4x1 grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, width: '100%' }}>
+              <div className="field">
+                <label>Duration (Mins)</label>
                 <input className="inp" type="number" min="1" value={testForm.duration_min} onChange={setF('duration_min')} />
               </div>
-              <div className="field" style={{ flex: 1 }}>
-                <label>Marks / Question</label>
+              <div className="field">
+                <label>Marks / Q</label>
                 <input className="inp" type="number" min="1" value={testForm.marks_per_question} onChange={setF('marks_per_question')} />
               </div>
-              <div className="field" style={{ flex: 1 }}>
-                <label>Negative Marks / Question</label>
+              <div className="field">
+                <label>Negative Marks / Q</label>
                 <input className="inp" type="number" min="0" step="0.25" value={testForm.negative_marks_per_question} onChange={setF('negative_marks_per_question')} />
               </div>
-              <div className="field" style={{ flex: 1 }}>
+              <div className="field">
                 <label>Attempt Limit</label>
                 <input className="inp" type="number" min="1" value={testForm.attempt_limit} onChange={setF('attempt_limit')} />
               </div>
             </div>
 
-            {/* Ingestion Source Tabs */}
-            <div>
+            {/* Ingestion Source Tabs: Responsive 2x2 or 4x1 Grid */}
+            <div style={{ width: '100%' }}>
               <label style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: 'block' }}>Question Input Method</label>
-              <div className="fx" style={{ gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 16, width: '100%' }}>
                 {[
                   { id: 'pdf', label: 'PDF Document' },
                   { id: 'docx', label: 'Word (.docx)' },
@@ -825,7 +837,7 @@ export function Tests() {
                     key={tab.id}
                     type="button"
                     className={`btn ${inputType === tab.id ? 'bp' : 'bs'}`}
-                    style={{ flex: 1, justifyContent: 'center' }}
+                    style={{ minWidth: 0, padding: '10px 8px', fontSize: '0.8125rem', textAlign: 'center', justifyContent: 'center', height: 'auto', minHeight: 40 }}
                     onClick={() => setInputType(tab.id)}
                   >
                     {tab.label}
@@ -834,10 +846,10 @@ export function Tests() {
               </div>
 
               {inputType === 'pdf' || inputType === 'docx' ? (
-                <div className="card" style={{ borderStyle: 'dashed', textAlign: 'center', padding: 36, background: 'var(--bg-subtle)' }}>
-                  <UploadIcon size={40} color="var(--color-primary)" style={{ marginBottom: 12 }} />
-                  <h3 className="h3" style={{ marginBottom: 6 }}>Upload Test Document</h3>
-                  <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
+                <div className="card" style={{ borderStyle: 'dashed', textAlign: 'center', padding: '24px 16px', background: 'var(--bg-subtle)', width: '100%', boxSizing: 'border-box' }}>
+                  <UploadIcon size={36} color="var(--color-primary)" style={{ marginBottom: 10 }} />
+                  <h3 className="h3" style={{ marginBottom: 6, fontSize: '1rem' }}>Upload Test Document</h3>
+                  <p className="muted" style={{ fontSize: 12, marginBottom: 16, lineHeight: 1.4 }}>
                     Upload educational material ({inputType.toUpperCase()}). The engine automatically normalizes questions, options, and answer keys.
                   </p>
                   <input
@@ -852,7 +864,7 @@ export function Tests() {
                     Select {inputType.toUpperCase()} File
                   </label>
                   {selectedFile && (
-                    <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: 'var(--color-primary)' }}>
+                    <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: 'var(--color-primary)', wordBreak: 'break-all' }}>
                       Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
                     </div>
                   )}
@@ -862,7 +874,7 @@ export function Tests() {
                   <textarea
                     className="inp"
                     rows={8}
-                    style={{ fontFamily: 'monospace', fontSize: 13 }}
+                    style={{ fontFamily: 'monospace', fontSize: 13, width: '100%' }}
                     placeholder={`1. What is the unit of electric current?\nA. Volt\nB. Ampere\nC. Ohm\nD. Watt\nAns: B\n\nQ2. Which planet is closest to the Sun?\n(A) Venus\n(B) Mercury\n(C) Mars\n(D) Earth\nAnswer: B`}
                     value={rawText}
                     onChange={e => setRawText(e.target.value)}
@@ -879,10 +891,10 @@ export function Tests() {
           </div>
         ) : (
           /* STEP 2: REVIEW QUESTIONS WORKSPACE */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
             {/* Status Summary Bar */}
-            <div className="card" style={{ background: 'var(--bg-subtle)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <div className="fx" style={{ gap: 16 }}>
+            <div className="card" style={{ background: 'var(--bg-subtle)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, width: '100%', boxSizing: 'border-box' }}>
+              <div className="fx fw" style={{ gap: 10 }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>Total: {reviewStats.total} Questions</span>
                 <span className="badge" style={{ background: '#d1fae5', color: '#059669' }}>
                   ✓ {reviewStats.valid} Valid
@@ -895,7 +907,7 @@ export function Tests() {
               </div>
 
               {/* Filter Tabs */}
-              <div className="fx" style={{ gap: 6 }}>
+              <div className="fx fw" style={{ gap: 6 }}>
                 <button
                   type="button"
                   className={`btn bsm ${questionFilter === 'all' ? 'bp' : 'bs'}`}
@@ -921,7 +933,7 @@ export function Tests() {
             </div>
 
             {/* Questions List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '55vh', overflowY: 'auto', paddingRight: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '55vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: 4, width: '100%', boxSizing: 'border-box' }}>
               {filteredQuestions.map((q, qIndex) => {
                 const actualIndex = reviewQuestions.findIndex(item => item.id === q.id);
                 return (
@@ -931,11 +943,13 @@ export function Tests() {
                     style={{
                       padding: 16,
                       border: q.is_valid ? '1px solid var(--border-light)' : '2px solid var(--color-warning)',
-                      background: q.is_valid ? 'var(--bg-surface)' : 'var(--color-warning-bg)'
+                      background: q.is_valid ? 'var(--bg-surface)' : 'var(--color-warning-bg)',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                   >
                     {/* Question Header */}
-                    <div className="fxb" style={{ marginBottom: 12 }}>
+                    <div className="fxb" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                       <div className="fx" style={{ gap: 8 }}>
                         <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>
                           Question {actualIndex + 1}
@@ -969,7 +983,7 @@ export function Tests() {
 
                     {/* Validation issues banner if invalid */}
                     {!q.is_valid && q.issues?.length > 0 && (
-                      <div style={{ background: '#fef2f2', color: '#dc2626', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12, fontWeight: 500 }}>
+                      <div style={{ background: '#fef2f2', color: '#dc2626', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12, fontWeight: 500, wordBreak: 'break-word' }}>
                         {q.issues.join(' • ')}
                       </div>
                     )}
@@ -983,25 +997,25 @@ export function Tests() {
                         value={q.text}
                         onChange={e => handleUpdateQuestionText(actualIndex, e.target.value)}
                         placeholder="Type question text..."
-                        style={{ fontSize: 13 }}
+                        style={{ fontSize: 13, width: '100%' }}
                       />
                     </div>
 
-                    {/* Options List */}
+                    {/* Options List: Responsive 1-col on mobile, 2-col on wider */}
                     <div className="field" style={{ marginBottom: 12 }}>
                       <label style={{ fontSize: 12, fontWeight: 600 }}>Options</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, width: '100%' }}>
                         {(q.options || []).map((opt, oIdx) => {
                           const optLabel = String.fromCharCode(65 + oIdx);
                           const isCorrect = q.correct_index === oIdx;
                           return (
-                            <div key={oIdx} className="fx" style={{ gap: 6, alignItems: 'center' }}>
-                              <span style={{ fontWeight: 700, fontSize: 13, color: isCorrect ? 'var(--color-success)' : 'var(--text-secondary)', width: 18 }}>
+                            <div key={oIdx} className="fx" style={{ gap: 6, alignItems: 'center', width: '100%', minWidth: 0 }}>
+                              <span style={{ fontWeight: 700, fontSize: 13, color: isCorrect ? 'var(--color-success)' : 'var(--text-secondary)', width: 18, flexShrink: 0 }}>
                                 {optLabel}.
                               </span>
                               <input
                                 className="inp"
-                                style={{ flex: 1, fontSize: 13, border: isCorrect ? '2px solid var(--color-success)' : '1px solid var(--border-light)' }}
+                                style={{ flex: 1, minWidth: 0, fontSize: 13, border: isCorrect ? '2px solid var(--color-success)' : '1px solid var(--border-light)' }}
                                 value={opt}
                                 onChange={e => handleUpdateOption(actualIndex, oIdx, e.target.value)}
                                 placeholder={`Option ${optLabel}`}
@@ -1010,7 +1024,7 @@ export function Tests() {
                                 <button
                                   type="button"
                                   className="btn-icon"
-                                  style={{ padding: 2, color: 'var(--text-tertiary)' }}
+                                  style={{ padding: 2, color: 'var(--text-tertiary)', flexShrink: 0 }}
                                   onClick={() => handleRemoveOption(actualIndex, oIdx)}
                                 >
                                   ✕
@@ -1024,7 +1038,7 @@ export function Tests() {
 
                     {/* Footer: Correct Answer Dropdown & Metadata */}
                     <div className="fxb" style={{ flexWrap: 'wrap', gap: 12, paddingTop: 10, borderTop: '1px solid var(--border-light)' }}>
-                      <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
+                      <div className="fx fw" style={{ gap: 8, alignItems: 'center' }}>
                         <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
                           Correct Answer:
                         </label>
@@ -1034,7 +1048,8 @@ export function Tests() {
                             padding: '4px 10px',
                             fontWeight: 700,
                             borderColor: q.correct_index === null ? 'var(--color-error)' : 'var(--color-success)',
-                            color: q.correct_index === null ? 'var(--color-error)' : 'var(--color-success)'
+                            color: q.correct_index === null ? 'var(--color-error)' : 'var(--color-success)',
+                            minWidth: 120
                           }}
                           value={q.correct_index === null ? '' : q.correct_index}
                           onChange={e => handleSetCorrectAnswer(actualIndex, e.target.value)}

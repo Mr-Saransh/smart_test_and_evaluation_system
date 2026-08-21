@@ -359,8 +359,9 @@ input, select, textarea { font-family: inherit; }
 }
 .modal-title, .modal-header h2, .modal-header h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0; }
 .modal-body {
-  padding: 20px; overflow-y: auto; flex: 1 1 auto; min-height: 0;
+  padding: 20px; overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; min-height: 0;
   -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  width: 100%; box-sizing: border-box;
 }
 .modal-footer {
   padding: 14px 20px; border-top: 1px solid var(--border-light);

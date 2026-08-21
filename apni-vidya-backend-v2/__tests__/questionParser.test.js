@@ -178,6 +178,28 @@ Answer: 1
       expect(result.questions[2].correct_index).toBe(2); // C
     });
 
+    test('handles 2x2 grid options and explanations accurately', () => {
+      const gridDoc = `
+1. Which planet is known as the Red Planet?
+(A) Earth    (B) Mars
+(C) Jupiter  (D) Venus
+Ans: B
+Explanation: Mars is called the Red Planet because of iron oxide on its surface.
+
+Q2. What is 2 + 2?
+(i) 3   (ii) 4   (iii) 5   (iv) 6
+Answer: (ii)
+      `;
+      const result = parseEducationalText(gridDoc);
+      expect(result.questions).toHaveLength(2);
+      expect(result.questions[0].options).toEqual(['Earth', 'Mars', 'Jupiter', 'Venus']);
+      expect(result.questions[0].correct_index).toBe(1);
+      expect(result.questions[0].explanation).toContain('iron oxide');
+
+      expect(result.questions[1].options).toEqual(['3', '4', '5', '6']);
+      expect(result.questions[1].correct_index).toBe(1);
+    });
+
     test('flags incomplete/unanswered questions as needs_review without crashing', () => {
       const brokenDoc = `
 1. This question has no options and no answer.
@@ -217,3 +239,4 @@ D. Opt 4
   });
 
 });
+

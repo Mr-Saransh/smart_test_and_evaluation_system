@@ -213,6 +213,12 @@ async function uploadDocument(req, res, next) {
     // Extract text from document buffer (ephemeral memory)
     const extractedText = await extractDocumentText(req.file);
 
+    if (!extractedText || !extractedText.trim()) {
+      return res.status(400).json({
+        error: 'No readable text could be extracted from the document. The file might be a scanned image or empty.'
+      });
+    }
+
     // Parse into structured questions using deterministic pipeline
     const parseResult = parseEducationalText(extractedText, defaultSubject, defaultMarks, defaultNeg);
 
@@ -227,7 +233,8 @@ async function uploadDocument(req, res, next) {
       }
     });
   } catch (err) {
-    next(err);
+    console.error('Error in uploadDocument:', err);
+    res.status(500).json({ error: err.message || 'Failed to process document' });
   }
 }
 
