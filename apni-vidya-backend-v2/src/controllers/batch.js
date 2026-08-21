@@ -65,7 +65,7 @@ async function update(req, res, next) {
     const { name, description, start_date, end_date, is_active, meet_link } = req.body;
 
     const batchRes = await db.query(
-      `SELECT b.id, b.payment_status FROM batches b
+      `SELECT b.* FROM batches b
        JOIN institutes i ON b.institute_id = i.id
        WHERE b.id = $1 AND i.admin_id = $2`,
       [id, req.user.id]
@@ -73,24 +73,33 @@ async function update(req, res, next) {
     if (batchRes.rows.length === 0) {
       return res.status(404).json({ error: 'Batch not found or not authorized' });
     }
+
+    const current = batchRes.rows[0];
     
     // Prevent activating an unpaid batch
-    if (is_active === true && batchRes.rows[0].payment_status === 'pending') {
+    if (is_active === true && current.payment_status === 'pending') {
       return res.status(403).json({ error: 'Cannot activate an unpaid batch. Please complete the payment first.' });
     }
 
+    const newName = (name !== undefined && name !== null && name.trim()) ? name.trim() : current.name;
+    const newDescription = description !== undefined ? (description ? description.trim() : null) : current.description;
+    const newStartDate = start_date !== undefined ? (start_date ? start_date : null) : current.start_date;
+    const newEndDate = end_date !== undefined ? (end_date ? end_date : null) : current.end_date;
+    const newIsActive = is_active !== undefined && is_active !== null ? Boolean(is_active) : current.is_active;
+    const newMeetLink = meet_link !== undefined ? (meet_link ? meet_link.trim() : null) : current.meet_link;
+
     const result = await db.query(
       `UPDATE batches 
-       SET name = COALESCE($1, name),
-           description = COALESCE($2, description),
-           start_date = COALESCE($3, start_date),
-           end_date = COALESCE($4, end_date),
-           is_active = COALESCE($5, is_active),
-           meet_link = COALESCE($6, meet_link),
+       SET name = $1,
+           description = $2,
+           start_date = $3,
+           end_date = $4,
+           is_active = $5,
+           meet_link = $6,
            updated_at = now()
        WHERE id = $7
        RETURNING *`,
-      [name, description, start_date, end_date, is_active, meet_link, id]
+      [newName, newDescription, newStartDate, newEndDate, newIsActive, newMeetLink, id]
     );
 
     res.json(result.rows[0]);

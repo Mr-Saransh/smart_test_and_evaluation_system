@@ -80,9 +80,14 @@ export function Batches() {
     try {
       const body = { ...form, institute_id: institute.id };
       if (editing) {
-        await PUT(`/batches/${editing.id}`, body, 'Batch updated');
-        setShow(false); load();
-        if (selectedBatch?.id === editing?.id) openDetails({ id: editing.id });
+        const updated = await PUT(`/batches/${editing.id}`, body, 'Batch updated');
+        setShow(false); 
+        load();
+        if (updated && updated.id) {
+          openDetails(updated);
+        } else if (selectedBatch?.id === editing?.id) {
+          openDetails({ id: editing.id });
+        }
       } else {
         const res = await POST('/batches', body, 'Batch created');
         if (res.capacity > 0) {
@@ -168,16 +173,19 @@ export function Batches() {
   };
 
   const openDetails = async (b) => {
+    if (!b || !b.id) return;
     setSelectedBatch(b);
     setLoadingDetails(true);
     try {
       const d = await GET(`/batches/details/${b.id}`);
       setDetails(d);
     } catch {
-      toast('Failed to load details');
+      // Gracefully clear if batch no longer exists
       setSelectedBatch(null);
+      setDetails(null);
+    } finally {
+      setLoadingDetails(false);
     }
-    setLoadingDetails(false);
   };
 
   const filteredItems = useMemo(() => {
@@ -185,11 +193,17 @@ export function Batches() {
   }, [items, tab]);
 
   useEffect(() => {
-    if (items.length > 0 && !selectedBatch) {
-      const activeBatch = items.find(b => b.is_active) || items[0];
-      openDetails(activeBatch);
+    if (items.length > 0) {
+      const exists = selectedBatch && items.some(b => b.id === selectedBatch.id);
+      if (!exists) {
+        const activeBatch = items.find(b => b.is_active) || items[0];
+        if (activeBatch) openDetails(activeBatch);
+      }
+    } else {
+      setSelectedBatch(null);
+      setDetails(null);
     }
-  }, [items, selectedBatch]);
+  }, [items]);
 
   if (!institute) return <EmptyState icon={BuildingIcon} title="Set up your institute first" />;
 
