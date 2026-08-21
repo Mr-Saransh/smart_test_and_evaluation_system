@@ -303,37 +303,72 @@ export function StudentPortal() {
 
   const renderTests = () => {
     const tests = data.tests || [];
-    return tests.length === 0 ? <EmptyState icon={FileTextIcon} title="No Tests Available" description="No active or upcoming tests for your batch." /> : (
+    return tests.length === 0 ? <EmptyState icon={FileTextIcon} title="No Assessments Available" description="No active or scheduled assessments for your batch." /> : (
       <div className="g3">
-        {tests.map(t => (
-          <div key={t.id} className="card card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="fxb" style={{ marginBottom: 4 }}>
-              <h3 className="h3" style={{ marginBottom: 0 }}>{t.title}</h3>
-              <span className="badge" style={{ background: t.status === 'active' ? '#d1fae5' : '#f1f5f9', color: t.status === 'active' ? '#059669' : '#475569' }}>
-                {t.status.toUpperCase()}
-              </span>
-            </div>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{t.subject}</div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 16, flex: 1 }}>
-              <div className="fx" style={{ gap: 6, marginBottom: 4 }}>🕒 {t.duration_min} mins</div>
-              <div className="fx" style={{ gap: 6, marginBottom: 4 }}>🎯 {t.total_marks} marks</div>
-              {t.start_date && t.end_date && <div className="fx" style={{ gap: 6 }}>📅 {formatDate(t.start_date)} to {formatDate(t.end_date)}</div>}
-            </div>
-            {t.status === 'active' && !t.submitted && (t.attempts_used < (t.attempt_limit || 1)) && (
-              <button className="btn bp w-full" style={{ justifyContent: 'center' }} onClick={() => navigate(`/play-test/${t.id}`)}>
-                Start Test (Attempt {t.attempts_used + 1}/{t.attempt_limit || 1})
-              </button>
-            )}
-            {t.submitted && (
-              <div className="fxb" style={{ background: 'var(--bg-secondary)', padding: '10px 12px', borderRadius: 8, marginTop: 8 }}>
-                <div style={{ fontSize: 13 }}>Score: <strong style={{ color: getScoreColor((t.score/t.max_marks)*100) }}>{t.score}/{t.max_marks}</strong></div>
-                {(t.attempts_used < (t.attempt_limit || 1)) && t.status === 'active' && (
-                   <button className="btn bd bsm" onClick={() => navigate(`/play-test/${t.id}`)}>Retake</button>
+        {tests.map(t => {
+          const isUpcoming = t.window_status === 'upcoming';
+          const isClosed = t.window_status === 'closed';
+          const isSubmitted = Boolean(t.submitted);
+          const canAttempt = t.can_attempt;
+
+          let badgeBg = '#d1fae5';
+          let badgeFg = '#059669';
+          if (isUpcoming) { badgeBg = '#fef3c7'; badgeFg = '#d97706'; }
+          else if (isClosed) { badgeBg = '#f1f5f9'; badgeFg = '#64748b'; }
+          else if (isSubmitted) { badgeBg = '#dbeafe'; badgeFg = '#2563eb'; }
+
+          return (
+            <div key={t.id} className="card card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="fxb" style={{ marginBottom: 6 }}>
+                <h3 className="h3" style={{ marginBottom: 0, fontSize: 16 }}>{t.title}</h3>
+                <span className="badge" style={{ background: badgeBg, color: badgeFg, fontWeight: 700 }}>
+                  {t.status_label || (t.status || 'ACTIVE').toUpperCase()}
+                </span>
+              </div>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{t.subject || 'General'}</div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 16, flex: 1 }}>
+                <div className="fx" style={{ gap: 6, marginBottom: 4 }}>🕒 {t.duration_min} mins &bull; 🎯 {t.total_marks} marks &bull; 📝 {t.question_count || 0} Qs</div>
+                {t.start_date && t.end_date && (
+                  <div className="fx" style={{ gap: 6, fontSize: 11 }}>📅 {formatDate(t.start_date)} – {formatDate(t.end_date)}</div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
+
+              {canAttempt && (
+                <button className="btn bp w-full" style={{ justifyContent: 'center' }} onClick={() => navigate(`/play-test/${t.id}`)}>
+                  Start Assessment (Attempt {t.attempts_used + 1}/{t.attempt_limit || 1})
+                </button>
+              )}
+
+              {isUpcoming && (
+                <button className="btn bs w-full" disabled style={{ justifyContent: 'center', opacity: 0.7 }}>
+                  Opens {formatDate(t.start_date)}
+                </button>
+              )}
+
+              {isSubmitted && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  <div className="fxb" style={{ background: 'var(--bg-secondary)', padding: '10px 12px', borderRadius: 8 }}>
+                    <div style={{ fontSize: 13 }}>
+                      Score: <strong style={{ color: getScoreColor((t.score / (t.max_marks || 1)) * 100) }}>{t.score}/{t.max_marks}</strong>
+                    </div>
+                    {canAttempt && (
+                      <button className="btn bd bsm" onClick={() => navigate(`/play-test/${t.id}`)}>Retake</button>
+                    )}
+                  </div>
+                  <button className="btn bs bsm w-full" style={{ justifyContent: 'center' }} onClick={() => navigate(`/report/${t.id}`)}>
+                    View Detailed Evaluation →
+                  </button>
+                </div>
+              )}
+
+              {isClosed && !isSubmitted && (
+                <div className="badge" style={{ background: '#f1f5f9', color: '#64748b', textAlign: 'center', padding: '8px 12px' }}>
+                  Assessment Window Closed
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };

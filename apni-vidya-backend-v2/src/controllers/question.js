@@ -1,9 +1,11 @@
 const db = require('../config/db');
 const { hasInstituteAccess } = require('../utils/access');
+const { parseEducationalText } = require('../services/questionParser');
+const { extractDocumentText } = require('../services/docExtractor');
 
 async function create(req, res, next) {
   try {
-    const { institute_id, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty } = req.body;
+    const { institute_id, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty, explanation, source } = req.body;
     if (!institute_id || !subject || !text) {
       return res.status(400).json({ error: 'institute_id, subject and text are required' });
     }
@@ -20,19 +22,19 @@ async function create(req, res, next) {
       }
     }
     const result = await db.query(
-      `INSERT INTO questions (institute_id, created_by, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      `INSERT INTO questions (institute_id, created_by, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty, explanation, source)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [institute_id, req.user.id, subject, topic || null, chapter || null, qType, text,
        qType === 'mcq' ? JSON.stringify(options) : null,
        qType === 'mcq' ? correct_index : null,
-       marks || 4, negative_marks || 0, difficulty || 'medium']
+       marks || 1, negative_marks || 0, difficulty || 'medium',
+       explanation || null, source || 'manual']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { next(err); }
 }
 
-// Bulk import (doc upload). Questions arrive pre-parsed from the client.
-// correct_index may be null — the answer can be set later via update().
+// Bulk import questions into the question bank.
 async function bulkCreate(req, res, next) {
   const client = await db.pool.connect();
   try {
@@ -46,33 +48,36 @@ async function bulkCreate(req, res, next) {
     if (!(await hasInstituteAccess(req.user, institute_id))) {
       return res.status(403).json({ error: 'Not authorized for this institute' });
     }
-    // Validate everything up front so an import is all-or-nothing.
+
+    // Validate questions before inserting
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      if (!q || !q.subject || !q.text) {
-        return res.status(400).json({ error: `Question ${i + 1}: subject and text are required` });
+      if (!q || !q.text) {
+        return res.status(400).json({ error: `Question ${i + 1}: question text is required` });
       }
       const qType = q.type === 'subjective' ? 'subjective' : 'mcq';
       if (qType === 'mcq') {
         if (!Array.isArray(q.options) || q.options.filter(o => o != null && String(o).trim()).length < 2) {
-          return res.status(400).json({ error: `Question ${i + 1}: MCQ questions need at least 2 options` });
+          return res.status(400).json({ error: `Question ${i + 1}: MCQ questions need at least 2 non-empty options` });
         }
         if (q.correct_index != null && (q.correct_index < 0 || q.correct_index >= q.options.length)) {
           return res.status(400).json({ error: `Question ${i + 1}: correct_index must point to a valid option` });
         }
       }
     }
+
     await client.query('BEGIN');
     const created = [];
     for (const q of questions) {
       const qType = q.type === 'subjective' ? 'subjective' : 'mcq';
       const r = await client.query(
-        `INSERT INTO questions (institute_id, created_by, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-        [institute_id, req.user.id, q.subject, q.topic || null, q.chapter || null, qType, q.text,
+        `INSERT INTO questions (institute_id, created_by, subject, topic, chapter, type, text, options, correct_index, marks, negative_marks, difficulty, explanation, source)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+        [institute_id, req.user.id, q.subject || 'General', q.topic || null, q.chapter || null, qType, q.text,
          qType === 'mcq' ? JSON.stringify(q.options) : null,
          qType === 'mcq' && q.correct_index != null ? q.correct_index : null,
-         q.marks || 4, q.negative_marks || 0, q.difficulty || 'medium']
+         q.marks || 1, q.negative_marks || 0, q.difficulty || 'medium',
+         q.explanation || null, q.source || 'doc_import']
       );
       created.push(r.rows[0]);
     }
@@ -86,8 +91,6 @@ async function bulkCreate(req, res, next) {
   }
 }
 
-// Update a question — mainly used to set/fix the correct answer after a bulk
-// import, but also allows editing text/options/metadata.
 async function update(req, res, next) {
   try {
     const { id } = req.params;
@@ -97,7 +100,7 @@ async function update(req, res, next) {
     if (!(await hasInstituteAccess(req.user, q.institute_id))) {
       return res.status(403).json({ error: 'Not authorized for this institute' });
     }
-    const { subject, topic, chapter, text, options, correct_index, marks, negative_marks, difficulty } = req.body;
+    const { subject, topic, chapter, text, options, correct_index, marks, negative_marks, difficulty, explanation } = req.body;
     const newOptions = options !== undefined ? options : q.options;
     const newCorrect = correct_index !== undefined ? correct_index : q.correct_index;
     if (q.type === 'mcq') {
@@ -118,32 +121,37 @@ async function update(req, res, next) {
          correct_index = $7,
          marks = COALESCE($8, marks),
          negative_marks = COALESCE($9, negative_marks),
-         difficulty = COALESCE($10, difficulty)
+         difficulty = COALESCE($10, difficulty),
+         explanation = COALESCE($11, explanation)
        WHERE id = $1 RETURNING *`,
       [id, subject || null, topic !== undefined ? (topic || null) : q.topic,
        chapter !== undefined ? (chapter || null) : q.chapter,
        text || null,
        q.type === 'mcq' ? JSON.stringify(newOptions) : null,
        q.type === 'mcq' ? newCorrect : null,
-       marks || null, negative_marks !== undefined ? negative_marks : null, difficulty || null]
+       marks || null, negative_marks !== undefined ? negative_marks : null, difficulty || null,
+       explanation !== undefined ? (explanation || null) : q.explanation]
     );
     res.json(result.rows[0]);
   } catch (err) { next(err); }
 }
 
-// List with optional subject / topic / difficulty filters.
 async function list(req, res, next) {
   try {
     const { institute_id } = req.params;
     if (!(await hasInstituteAccess(req.user, institute_id))) {
       return res.status(403).json({ error: 'Not authorized for this institute' });
     }
-    const { subject, topic, difficulty } = req.query;
+    const { subject, topic, difficulty, search } = req.query;
     const conditions = ['institute_id = $1'];
     const params = [institute_id];
     if (subject) { params.push(subject); conditions.push(`subject = $${params.length}`); }
     if (topic) { params.push(topic); conditions.push(`topic = $${params.length}`); }
     if (difficulty) { params.push(difficulty); conditions.push(`difficulty = $${params.length}`); }
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`text ILIKE $${params.length}`);
+    }
     const result = await db.query(
       `SELECT * FROM questions WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
       params
@@ -172,7 +180,6 @@ async function remove(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// Distinct subjects + topics, for building filters / SWOT taxonomy on the client.
 async function taxonomy(req, res, next) {
   try {
     const { institute_id } = req.params;
@@ -189,83 +196,76 @@ async function taxonomy(req, res, next) {
   } catch (err) { next(err); }
 }
 
-function parseTextToQuestions(text) {
-  const questions = [];
-  const blocks = text.split(/\n(?=\d+\.)/); // split by "1.", "2."
-
-  for (const block of blocks) {
-    const qMatch = block.match(/^\d+\.\s*(.+)/);
-    if (!qMatch) continue;
-    
-    let textLine = qMatch[1].trim();
-    const options = [];
-    let correct_index = null;
-
-    // Extract options (A, B, C, D)
-    const optRegex = /([A-D])[\)\.]\s+([^\n]+)/g;
-    let optMatch;
-    while ((optMatch = optRegex.exec(block)) !== null) {
-      options.push(optMatch[2].trim());
-    }
-
-    // Extract Answer
-    const ansRegex = /Ans(?:wer)?:\s*([A-D])/i;
-    const ansMatch = block.match(ansRegex);
-    if (ansMatch) {
-      const letter = ansMatch[1].toUpperCase();
-      correct_index = letter.charCodeAt(0) - 65; // A=0, B=1
-    }
-
-    // If we found a question and at least 2 options, save it
-    if (textLine && options.length >= 2) {
-      questions.push({
-        type: 'mcq',
-        text: textLine,
-        options,
-        correct_index,
-        marks: 4,
-        negative_marks: 1,
-        difficulty: 'medium'
-      });
-    }
-  }
-  return questions;
-}
-
-// PDF upload endpoint
-async function uploadPdf(req, res, next) {
+/**
+ * Multi-format document upload (PDF, DOCX, TXT)
+ */
+async function uploadDocument(req, res, next) {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No PDF file uploaded' });
+      return res.status(400).json({ error: 'No document file uploaded. Please select a PDF or DOCX file.' });
     }
 
-    // Polyfill missing browser APIs in Vercel Node runtime for pdf.js
-    if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = class DOMMatrix {};
-    if (typeof global.ImageData === 'undefined') global.ImageData = class ImageData {};
-    if (typeof global.Path2D === 'undefined') global.Path2D = class Path2D {};
-    
-    const pdfParse = require('pdf-parse');
-    const data = await pdfParse(req.file.buffer);
-    
-    const questions = parseTextToQuestions(data.text);
-    res.json({ questions });
+    const { subject, marks_per_question, negative_marks } = req.body;
+    const defaultSubject = subject || 'General';
+    const defaultMarks = Number(marks_per_question) || 1;
+    const defaultNeg = Number(negative_marks) || 0;
+
+    // Extract text from document buffer (ephemeral memory)
+    const extractedText = await extractDocumentText(req.file);
+
+    // Parse into structured questions using deterministic pipeline
+    const parseResult = parseEducationalText(extractedText, defaultSubject, defaultMarks, defaultNeg);
+
+    res.json({
+      success: true,
+      questions: parseResult.questions,
+      stats: parseResult.stats,
+      metadata: {
+        ...parseResult.metadata,
+        filename: req.file.originalname,
+        filesize: req.file.size
+      }
+    });
   } catch (err) {
     next(err);
   }
 }
 
-// Text extraction endpoint
+/**
+ * Text extraction endpoint for pasted educational content
+ */
 async function extractText(req, res, next) {
   try {
-    const { text } = req.body;
-    if (!text) {
-      return res.status(400).json({ error: 'No text provided' });
+    const { text, subject, marks_per_question, negative_marks } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'No text content provided' });
     }
-    const questions = parseTextToQuestions(text);
-    res.json({ questions });
+
+    const defaultSubject = subject || 'General';
+    const defaultMarks = Number(marks_per_question) || 1;
+    const defaultNeg = Number(negative_marks) || 0;
+
+    const parseResult = parseEducationalText(text, defaultSubject, defaultMarks, defaultNeg);
+
+    res.json({
+      success: true,
+      questions: parseResult.questions,
+      stats: parseResult.stats,
+      metadata: parseResult.metadata
+    });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { create, bulkCreate, update, list, remove, taxonomy, uploadPdf, extractText };
+module.exports = {
+  create,
+  bulkCreate,
+  update,
+  list,
+  remove,
+  taxonomy,
+  uploadDocument,
+  uploadPdf: uploadDocument, // backward compatible
+  extractText
+};

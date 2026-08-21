@@ -7,6 +7,7 @@ import { Modal } from '../../components/common/Modal';
 import { SkeletonTable } from '../../components/common/Skeleton';
 import { getInitials, formatDate } from '../../utils/helpers';
 import { useDebounce } from '../../hooks/useDebounce';
+import { StudentReportCardModal } from '../../components/dashboard/StudentReportCardModal';
 import * as XLSX from 'xlsx';
 
 export function Students() {
@@ -37,6 +38,7 @@ export function Students() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({ full_name: '', phone: '', email: '', parent_name: '', parent_phone: '', batch_id: '', roll_number: '' });
   const [saving, setSaving] = useState(false);
+  const [selectedReportStudentId, setSelectedReportStudentId] = useState(null);
 
   // Profile status view
   const [activeTab, setActiveTab] = useState('students'); // 'students' | 'status'
@@ -307,7 +309,8 @@ export function Students() {
                       </td>
                       <td data-label="Joined"><div className="muted" style={{ fontSize: 13 }}>{formatDate(s.created_at)}</div></td>
                       <td data-label="Actions">
-                        <div className="fx" style={{ gap: 8 }}>
+                        <div className="fx" style={{ gap: 6 }}>
+                          <button className="btn bp bsm" onClick={() => setSelectedReportStudentId(s.id)}>Report</button>
                           <button className="btn bs bsm" onClick={() => openEdit(s)}>Edit</button>
                           <button className="btn bd bsm" style={{ color: 'var(--color-error)' }} onClick={() => remove(s.id)}>Del</button>
                         </div>
@@ -648,6 +651,18 @@ export function Students() {
           <div className="field"><label>Parent Phone</label><input className="inp" type="tel" value={editForm.parent_phone} onChange={setEF('parent_phone')} placeholder="10-digit number" /></div>
         </div>
       </Modal>
+
+      {/* Student Assessment Report Card Modal */}
+      {selectedReportStudentId && (
+        <StudentReportCardModal
+          studentId={selectedReportStudentId}
+          isOpen={Boolean(selectedReportStudentId)}
+          onClose={() => setSelectedReportStudentId(null)}
+          onOpenDetailReport={(testId, studentId) => {
+            window.open(`/report/${testId}?student_id=${studentId}`, '_blank');
+          }}
+        />
+      )}
     </div>
   );
 }

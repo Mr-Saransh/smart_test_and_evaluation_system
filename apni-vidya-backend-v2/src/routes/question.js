@@ -4,11 +4,15 @@ const question = require('../controllers/question');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 } // 25 MB max
+});
 
 router.post('/', authenticate, authorize('institute_admin', 'teacher'), question.create);
 router.post('/bulk', authenticate, authorize('institute_admin', 'teacher'), question.bulkCreate);
-router.post('/upload-pdf', authenticate, authorize('institute_admin', 'teacher'), upload.single('file'), question.uploadPdf);
+router.post('/upload-document', authenticate, authorize('institute_admin', 'teacher'), upload.single('file'), question.uploadDocument);
+router.post('/upload-pdf', authenticate, authorize('institute_admin', 'teacher'), upload.single('file'), question.uploadDocument); // backward compatible alias
 router.post('/extract-text', authenticate, authorize('institute_admin', 'teacher'), question.extractText);
 router.put('/:id', authenticate, authorize('institute_admin', 'teacher'), question.update);
 router.get('/:institute_id', authenticate, authorize('institute_admin', 'teacher'), question.list);

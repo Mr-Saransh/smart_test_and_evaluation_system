@@ -12,6 +12,9 @@ router.post('/:test_id/submit', authenticate, authorize('student'), test.submit)
 router.get('/:test_id/results', authenticate, authorize('institute_admin', 'teacher'), test.results);
 router.get('/:test_id/result-detail', authenticate, authorize('student', 'institute_admin', 'teacher', 'parent'), test.resultDetail);
 router.get('/:test_id/analysis', authenticate, authorize('institute_admin', 'teacher'), test.analysis);
+router.get('/:test_id/batch-analytics', authenticate, authorize('institute_admin', 'teacher'), test.batchAnalytics);
+router.get('/report-card/student/:student_id', authenticate, authorize('student', 'institute_admin', 'teacher', 'parent'), test.studentReportCard);
 router.put('/submissions/:submission_id/grade', authenticate, authorize('institute_admin', 'teacher'), test.gradeSubjective);
+router.post('/:test_id/status', authenticate, authorize('institute_admin', 'teacher'), test.updateStatus);
 
 module.exports = router;

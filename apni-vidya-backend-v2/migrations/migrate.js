@@ -20,6 +20,7 @@ const migrations = [
   require('./012_allow_duplicate_phones.js'),
   require('./013_batch_payments.js'),
   require('./014_batch_deferred_capacity.js'),
+  require('./015_test_engine_enhancements.js'),
 ];
 
 async function migrate() {
