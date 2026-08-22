@@ -249,12 +249,41 @@ async function profileSetup(req, res, next) {
     const { full_name, phone, address, date_of_birth, parent_name, parent_phone } = req.body;
 
     if (!full_name || !phone) {
+      client.release();
       return res.status(400).json({ error: 'Full name and phone number are required' });
     }
 
+    const cleanPhone = phone.trim();
+
     // Validate phone format
-    if (!/^(\+?91|0)?[6-9]\d{9}$/.test(phone.trim())) {
+    if (!/^(\+?91|0)?[6-9]\d{9}$/.test(cleanPhone)) {
+      client.release();
       return res.status(400).json({ error: 'Enter a valid 10-digit mobile number' });
+    }
+
+    // Check if phone number is already used by another user
+    const existingPhoneUser = await client.query(
+      'SELECT id, full_name, role FROM users WHERE phone = $1 AND id != $2',
+      [cleanPhone, userId]
+    );
+    if (existingPhoneUser.rows.length > 0) {
+      client.release();
+      return res.status(400).json({
+        error: `The mobile number ${cleanPhone} is already registered with another account (${existingPhoneUser.rows[0].role}: ${existingPhoneUser.rows[0].full_name}). Please enter your own unique mobile number.`
+      });
+    }
+
+    // Standardize Date of Birth if provided
+    let formattedDob = null;
+    if (date_of_birth) {
+      if (/^\d{2}-\d{2}-\d{4}$/.test(date_of_birth)) {
+        const [d, m, y] = date_of_birth.split('-');
+        formattedDob = `${y}-${m}-${d}`;
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(date_of_birth)) {
+        formattedDob = date_of_birth;
+      } else if (!isNaN(Date.parse(date_of_birth))) {
+        formattedDob = new Date(date_of_birth).toISOString().split('T')[0];
+      }
     }
 
     await client.query('BEGIN');
@@ -262,7 +291,7 @@ async function profileSetup(req, res, next) {
     // Update user record
     await client.query(
       `UPDATE users SET full_name = $1, phone = $2, profile_completed = true, updated_at = now() WHERE id = $3`,
-      [full_name.trim(), phone.trim(), userId]
+      [full_name.trim(), cleanPhone, userId]
     );
 
     // Get student record
@@ -277,27 +306,44 @@ async function profileSetup(req, res, next) {
       // Update student details
       await client.query(
         `UPDATE students SET address = $1, date_of_birth = $2 WHERE id = $3`,
-        [address || null, date_of_birth || null, studentId]
+        [address ? address.trim() : null, formattedDob, studentId]
       );
 
-      // Create parent account if provided
+      // Handle Parent Account / Details
       if (parent_phone && /^(\+?91|0)?[6-9]\d{9}$/.test(parent_phone.trim())) {
-        const parentPassword = generateTempPassword();
-        const salt = await bcrypt.genSalt(10);
-        const parentHash = await bcrypt.hash(parentPassword, salt);
+        const cleanParentPhone = parent_phone.trim();
 
-        const parentUser = await client.query(
-          `INSERT INTO users (phone, password_hash, role, full_name, must_reset_password, profile_completed)
-           VALUES ($1, $2, 'parent', $3, true, true)
-           ON CONFLICT (phone) DO UPDATE SET full_name = EXCLUDED.full_name
-           RETURNING id`,
-          [parent_phone.trim(), parentHash, parent_name || `Parent of ${full_name}`]
-        );
+        // If parent phone is different from student's phone, manage parent user account
+        if (cleanParentPhone !== cleanPhone) {
+          const existingParent = await client.query(
+            'SELECT id FROM users WHERE phone = $1',
+            [cleanParentPhone]
+          );
 
-        await client.query(
-          'UPDATE students SET parent_user_id = $1 WHERE id = $2',
-          [parentUser.rows[0].id, studentId]
-        );
+          let parentUserId;
+          if (existingParent.rows.length > 0) {
+            parentUserId = existingParent.rows[0].id;
+          } else {
+            const parentPassword = generateTempPassword();
+            const salt = await bcrypt.genSalt(10);
+            const parentHash = await bcrypt.hash(parentPassword, salt);
+
+            const parentUser = await client.query(
+              `INSERT INTO users (phone, password_hash, role, full_name, must_reset_password, profile_completed)
+               VALUES ($1, $2, 'parent', $3, true, true)
+               RETURNING id`,
+              [cleanParentPhone, parentHash, parent_name ? parent_name.trim() : `Parent of ${full_name.trim()}`]
+            );
+            parentUserId = parentUser.rows[0].id;
+          }
+
+          if (parentUserId) {
+            await client.query(
+              'UPDATE students SET parent_user_id = $1 WHERE id = $2',
+              [parentUserId, studentId]
+            );
+          }
+        }
       }
     }
 
@@ -308,6 +354,9 @@ async function profileSetup(req, res, next) {
   } catch (err) {
     await client.query('ROLLBACK');
     client.release();
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'A user with this mobile number or email already exists. Please use a unique number.' });
+    }
     next(err);
   }
 }
