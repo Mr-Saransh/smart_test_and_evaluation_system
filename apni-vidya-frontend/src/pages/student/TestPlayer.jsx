@@ -11,6 +11,7 @@ import {
   SparklesIcon,
   TrophyIcon
 } from '../../components/common/Icons';
+import { Modal } from '../../components/common/Modal';
 
 const MAX_WARNINGS = 3;
 
