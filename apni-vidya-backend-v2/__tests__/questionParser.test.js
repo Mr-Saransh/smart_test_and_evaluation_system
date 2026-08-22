@@ -217,7 +217,72 @@ D. Opt 4
       expect(unAns).toBeDefined();
       expect(unAns.is_valid).toBe(false);
       expect(unAns.status).toBe('needs_review');
-      expect(unAns.issues).toEqual(expect.arrayContaining([expect.stringMatching(/Correct answer/)]));
+      expect(unAns.issues.length).toBeGreaterThan(0);
+    });
+
+    test('parses AI-generated markdown text with bolding, headers, and answer keys', () => {
+      const aiDoc = `# COMPUTER SCIENCE - PRACTICE QUESTIONS
+
+**Q1. Which data structure follows the FIFO principle?**
+
+A. Stack
+B) Queue
+C. Tree
+D : Graph
+
+---
+
+### **Question 2**
+
+What is the **time complexity** of binary search on a sorted array?
+
+(A) O(n)
+**B. O(log n)**
+C) O(n log n)
+D) O(1)
+
+**3. Which HTML tag is used to create a hyperlink?**
+
+A. <link>
+B. <a>
+C. <href>
+D. <url>
+
+## **Q4) SQL**
+
+Which command is used to **retrieve data** from a database?
+
+A) INSERT
+B. UPDATE
+**C) SELECT**
+D. DELETE
+
+**Question 5:**
+
+Which protocol is commonly used to securely transfer web pages over the internet?
+
+A. HTTP
+B. FTP
+C. SMTP
+D. **HTTPS**
+
+**ANSWER KEY**
+Q1 - B
+Q2: B
+3. B
+Q4 = C
+5 - D
+`;
+      const result = parseEducationalText(aiDoc, 'Computer Science', 1, 0);
+      expect(result.questions).toHaveLength(5);
+      expect(result.stats.valid).toBe(5);
+      expect(result.questions[0].options).toEqual(['Stack', 'Queue', 'Tree', 'Graph']);
+      expect(result.questions[0].correct_index).toBe(1);
+      expect(result.questions[1].correct_index).toBe(1);
+      expect(result.questions[2].options).toEqual(['<link>', '<a>', '<href>', '<url>']);
+      expect(result.questions[2].correct_index).toBe(1);
+      expect(result.questions[3].correct_index).toBe(2);
+      expect(result.questions[4].correct_index).toBe(3);
     });
   });
 

@@ -830,7 +830,7 @@ export function Tests() {
                 {[
                   { id: 'pdf', label: 'PDF Document' },
                   { id: 'docx', label: 'Word (.docx)' },
-                  { id: 'text', label: 'Paste Messy Text' },
+                  { id: 'text', label: 'Paste Text' },
                   { id: 'manual', label: 'Manual Entry' }
                 ].map(tab => (
                   <button
