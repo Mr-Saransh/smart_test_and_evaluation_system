@@ -13,15 +13,45 @@ import {
 } from '../../components/common/Icons';
 import { getScoreColor, formatDate } from '../../utils/helpers';
 import { SkeletonCard, SkeletonTable } from '../../components/common/Skeleton';
+import { useAuth } from '../../context/AuthContext';
 
 export function DetailedReport() {
   const { test_id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all' | 'correct' | 'wrong' | 'skipped'
+
+  const handleBack = () => {
+    // If opened in a new tab / window with no history
+    if (window.history.length <= 1) {
+      if (user?.role === 'student') navigate('/student/tests');
+      else if (user?.role === 'teacher') navigate('/teacher/tests');
+      else if (user?.role === 'parent') navigate('/parent');
+      else navigate('/admin/tests');
+      return;
+    }
+
+    // If navigated from attempt page, redirect to tests list to avoid bounce
+    if (document.referrer && document.referrer.includes('/attempt')) {
+      if (user?.role === 'student') navigate('/student/tests');
+      else navigate('/admin/tests');
+      return;
+    }
+
+    // Standard history back with role fallback
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      if (user?.role === 'student') navigate('/student/tests');
+      else if (user?.role === 'teacher') navigate('/teacher/tests');
+      else if (user?.role === 'parent') navigate('/parent');
+      else navigate('/admin/tests');
+    }
+  };
 
   useEffect(() => {
     const sId = searchParams.get('student_id');
@@ -31,10 +61,10 @@ export function DetailedReport() {
       .then(setReport)
       .catch(err => {
         toast(err.message || 'Failed to load detailed assessment report');
-        navigate(-1);
+        handleBack();
       })
       .finally(() => setLoading(false));
-  }, [test_id, searchParams, navigate]);
+  }, [test_id, searchParams]);
 
   const filteredQuestions = useMemo(() => {
     if (!report?.questions) return [];
@@ -72,8 +102,8 @@ export function DetailedReport() {
       
       {/* Top Action Bar */}
       <div className="fxb" style={{ marginBottom: 20 }}>
-        <button className="btn bs" onClick={() => navigate(-1)}>
-          ← Back
+        <button className="btn bs" onClick={handleBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          ← {user?.role === 'student' ? 'Back to Assessments' : 'Back to Tests'}
         </button>
         <button className="btn bs" onClick={handlePrint} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <DownloadIcon size={16} /> Print Report
