@@ -19,38 +19,56 @@ import { ResetPassword } from './pages/auth/ResetPassword';
 import { ChangePassword } from './pages/auth/ChangePassword';
 import { ProfileSetup } from './pages/auth/ProfileSetup';
 
+// Helper to automatically reload once if a new Vercel deployment replaced chunk hashes
+const lazyRetry = (importFn) =>
+  lazy(async () => {
+    const hasReloaded = window.sessionStorage.getItem('av2_chunk_reload');
+    try {
+      const mod = await importFn();
+      window.sessionStorage.removeItem('av2_chunk_reload');
+      return mod;
+    } catch (err) {
+      if (!hasReloaded) {
+        window.sessionStorage.setItem('av2_chunk_reload', 'true');
+        window.location.reload();
+        return new Promise(() => {}); // Pause while reloading
+      }
+      throw err;
+    }
+  });
+
 // Admin / Teacher Pages
-const AdminOverview = lazy(() => import('./pages/admin/Overview').then(m => ({ default: m.Overview })));
-const InstituteProfile = lazy(() => import('./pages/admin/InstituteProfile').then(m => ({ default: m.InstituteProfile })));
-const Courses = lazy(() => import('./pages/admin/Courses').then(m => ({ default: m.Courses })));
-const Batches = lazy(() => import('./pages/admin/Batches').then(m => ({ default: m.Batches })));
-const Teachers = lazy(() => import('./pages/admin/Teachers').then(m => ({ default: m.Teachers })));
-const Students = lazy(() => import('./pages/admin/Students').then(m => ({ default: m.Students })));
-const Enrollments = lazy(() => import('./pages/admin/Enrollments').then(m => ({ default: m.Enrollments })));
-const Attendance = lazy(() => import('./pages/admin/Attendance').then(m => ({ default: m.Attendance })));
-const Fees = lazy(() => import('./pages/admin/Fees').then(m => ({ default: m.Fees })));
-const Tests = lazy(() => import('./pages/admin/Tests').then(m => ({ default: m.Tests })));
-const LiveClasses = lazy(() => import('./pages/shared/LiveClasses').then(m => ({ default: m.LiveClasses })));
-const Timetable = lazy(() => import('./pages/admin/Timetable').then(m => ({ default: m.Timetable })));
-const Planner = lazy(() => import('./pages/admin/Planner').then(m => ({ default: m.Planner })));
-const StudyMaterials = lazy(() => import('./pages/admin/StudyMaterials').then(m => ({ default: m.StudyMaterials })));
-const Announcements = lazy(() => import('./pages/admin/Announcements').then(m => ({ default: m.Announcements })));
-const Notifications = lazy(() => import('./pages/admin/Notifications').then(m => ({ default: m.Notifications })));
-const Reports = lazy(() => import('./pages/admin/Reports').then(m => ({ default: m.Reports })));
-const Settings = lazy(() => import('./pages/admin/Settings').then(m => ({ default: m.Settings })));
+const AdminOverview = lazyRetry(() => import('./pages/admin/Overview').then(m => ({ default: m.Overview })));
+const InstituteProfile = lazyRetry(() => import('./pages/admin/InstituteProfile').then(m => ({ default: m.InstituteProfile })));
+const Courses = lazyRetry(() => import('./pages/admin/Courses').then(m => ({ default: m.Courses })));
+const Batches = lazyRetry(() => import('./pages/admin/Batches').then(m => ({ default: m.Batches })));
+const Teachers = lazyRetry(() => import('./pages/admin/Teachers').then(m => ({ default: m.Teachers })));
+const Students = lazyRetry(() => import('./pages/admin/Students').then(m => ({ default: m.Students })));
+const Enrollments = lazyRetry(() => import('./pages/admin/Enrollments').then(m => ({ default: m.Enrollments })));
+const Attendance = lazyRetry(() => import('./pages/admin/Attendance').then(m => ({ default: m.Attendance })));
+const Fees = lazyRetry(() => import('./pages/admin/Fees').then(m => ({ default: m.Fees })));
+const Tests = lazyRetry(() => import('./pages/admin/Tests').then(m => ({ default: m.Tests })));
+const LiveClasses = lazyRetry(() => import('./pages/shared/LiveClasses').then(m => ({ default: m.LiveClasses })));
+const Timetable = lazyRetry(() => import('./pages/admin/Timetable').then(m => ({ default: m.Timetable })));
+const Planner = lazyRetry(() => import('./pages/admin/Planner').then(m => ({ default: m.Planner })));
+const StudyMaterials = lazyRetry(() => import('./pages/admin/StudyMaterials').then(m => ({ default: m.StudyMaterials })));
+const Announcements = lazyRetry(() => import('./pages/admin/Announcements').then(m => ({ default: m.Announcements })));
+const Notifications = lazyRetry(() => import('./pages/admin/Notifications').then(m => ({ default: m.Notifications })));
+const Reports = lazyRetry(() => import('./pages/admin/Reports').then(m => ({ default: m.Reports })));
+const Settings = lazyRetry(() => import('./pages/admin/Settings').then(m => ({ default: m.Settings })));
 
 // Student Portal
-const StudentPortal = lazy(() => import('./pages/student/StudentPortal').then(m => ({ default: m.StudentPortal })));
+const StudentPortal = lazyRetry(() => import('./pages/student/StudentPortal').then(m => ({ default: m.StudentPortal })));
 
 // Parent Portal uses the same component, just different RBAC, because parent accounts have a student_id mapped to them on backend (if configured) or they just see their child's view.
 // In this MVP, we map parent routes to the StudentPortal which handles the user's mapped student data.
-const ParentPortal = lazy(() => import('./pages/student/StudentPortal').then(m => ({ default: m.StudentPortal }))); 
+const ParentPortal = lazyRetry(() => import('./pages/student/StudentPortal').then(m => ({ default: m.StudentPortal }))); 
 
-const SuperAdminOverview = lazy(() => import('./pages/superadmin/Overview').then(m => ({ default: m.Overview })));
-const SuperAdminInstitutes = lazy(() => import('./pages/superadmin/Institutes').then(m => ({ default: m.Institutes })));
-const TestPlayer = lazy(() => import('./pages/student/TestPlayer').then(m => ({ default: m.TestPlayer })));
-const DetailedReport = lazy(() => import('./pages/shared/DetailedReport').then(m => ({ default: m.DetailedReport })));
-const Leaderboard = lazy(() => import('./pages/shared/Leaderboard').then(m => ({ default: m.Leaderboard })));
+const SuperAdminOverview = lazyRetry(() => import('./pages/superadmin/Overview').then(m => ({ default: m.Overview })));
+const SuperAdminInstitutes = lazyRetry(() => import('./pages/superadmin/Institutes').then(m => ({ default: m.Institutes })));
+const TestPlayer = lazyRetry(() => import('./pages/student/TestPlayer').then(m => ({ default: m.TestPlayer })));
+const DetailedReport = lazyRetry(() => import('./pages/shared/DetailedReport').then(m => ({ default: m.DetailedReport })));
+const Leaderboard = lazyRetry(() => import('./pages/shared/Leaderboard').then(m => ({ default: m.Leaderboard })));
 
 // Super Admin Fallback for non-existent routes
 const ComingSoon = ({ title }) => (
