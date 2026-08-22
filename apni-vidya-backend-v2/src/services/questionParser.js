@@ -74,6 +74,10 @@ function cleanGarbageAndNoise(text) {
     /^\s*(?:all\s+questions\s+are\s+compulsory|time\s*allowed\s*[:\-]|maximum\s*marks\s*[:\-]|total\s*marks\s*[:\-])/i,
     /^\s*(?:general\s+instructions|instructions\s*for\s*candidates|read\s*the\s*following\s*instructions)/i,
     /^\s*(?:question\s+bank|sample\s+paper|mock\s+test\s+series|practice\s+sheet|daily\s+practice\s+problem|dpp\s*[-:\d]*)\s*$/i,
+    /^\s*(?:#+\s*)?(?:\d+\s+)?(?:multiple[\s\-]*choice|objective|single\s*correct)\s*questions?\s*[:\.]?\s*$/i,
+    /^\s*(?:#+\s*)?(?:section|part)\s*[a-z0-9]+[\s:\-]+(?:\d+\s+)?(?:multiple[\s\-]*choice|objective|single\s*correct|questions?)?.*$/i,
+    /^\s*(?:#+\s*)?(?:total\s*(?:no\.?\s*of\s*)?questions?|number\s*of\s*questions?)\s*[:\-]?\s*\d*\s*$/i,
+    /^\s*(?:#+\s*)?(?:choose|select)\s+the\s+correct\s+(?:option|answer)\s*(?:from\s+the\s+following)?[:\.]?\s*$/i,
     /^\s*[-=_*~]{3,}\s*$/, // Horizontal rules
   ];
 
