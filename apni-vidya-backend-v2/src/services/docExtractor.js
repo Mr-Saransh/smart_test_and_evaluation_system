@@ -27,46 +27,164 @@ function ensurePdfPolyfills() {
 }
 
 /**
+ * Helper to unescape string literals in PDF syntax.
+ */
+function unescapePdfString(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\([0-7]{1,3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)))
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\b/g, '\b')
+    .replace(/\\f/g, '\f')
+    .replace(/\\(.)/g, '$1');
+}
+
+/**
+ * Pure JavaScript fallback PDF stream & content extractor.
+ * Decompresses stream chunks using built-in zlib and parses text drawing operators
+ * (BT/ET, Tj, TJ, hex strings, etc.) without requiring external workers or native dependencies.
+ */
+function extractPdfTextPureJs(buffer) {
+  const content = buffer.toString('binary');
+  const extracted = [];
+
+  const streamRegex = /stream[\r\n]+([\s\S]*?)[\r\n]+endstream/g;
+  let match;
+
+  while ((match = streamRegex.exec(content)) !== null) {
+    const rawStream = match[1];
+    const streamData = Buffer.from(rawStream, 'binary');
+    let textChunk = '';
+
+    // Try inflating standard FlateDecode compression
+    try {
+      const decompressed = zlib.inflateSync(streamData);
+      textChunk = decompressed.toString('latin1');
+    } catch (_) {
+      try {
+        const decompressed = zlib.inflateRawSync(streamData);
+        textChunk = decompressed.toString('latin1');
+      } catch (_) {
+        textChunk = rawStream;
+      }
+    }
+
+    // Extract text from text blocks BT ... ET
+    const btRegex = /BT[\s\S]*?ET/g;
+    let btMatch;
+    while ((btMatch = btRegex.exec(textChunk)) !== null) {
+      const block = btMatch[0];
+
+      // Match (string) Tj or ' or "
+      const tjRegex = /\(((?:[^()\\]|\\.)*)\)\s*(?:Tj|'|")/g;
+      let tjMatch;
+      while ((tjMatch = tjRegex.exec(block)) !== null) {
+        const str = unescapePdfString(tjMatch[1]);
+        if (str.trim()) extracted.push(str.trim());
+      }
+
+      // Match array [...] TJ
+      const arrayTjRegex = /\[([\s\S]*?)\]\s*TJ/g;
+      let atjMatch;
+      while ((atjMatch = arrayTjRegex.exec(block)) !== null) {
+        const inner = atjMatch[1];
+        const strRegex = /\(((?:[^()\\]|\\.)*)\)/g;
+        let sMatch;
+        const lineParts = [];
+        while ((sMatch = strRegex.exec(inner)) !== null) {
+          lineParts.push(unescapePdfString(sMatch[1]));
+        }
+        const joined = lineParts.join(' ').trim();
+        if (joined) extracted.push(joined);
+      }
+
+      // Match hex string <48656c6c6f> Tj
+      const hexTjRegex = /<([0-9a-fA-F\s]+)>\s*(?:Tj|'|")/g;
+      let hexMatch;
+      while ((hexMatch = hexTjRegex.exec(block)) !== null) {
+        const hex = hexMatch[1].replace(/\s+/g, '');
+        if (hex.length % 2 === 0) {
+          try {
+            const str = Buffer.from(hex, 'hex').toString('utf8').trim();
+            if (str) extracted.push(str);
+          } catch (_) {}
+        }
+      }
+    }
+  }
+
+  return extracted.join('\n');
+}
+
+/**
  * Extracts plain text from a PDF buffer.
- * Compatible with both pdf-parse v2 (class-based) and pdf-parse v1 (function-based).
+ * Multi-layer execution:
+ * 1. unpdf (Serverless-native, edge-ready, zero-worker, zero-canvas)
+ * 2. Pure JS stream extractor (Zero-dependency zlib FlateDecode + PDF operator parser)
+ * 3. pdf-parse fallback (legacy compatibility wrapped in safe try/catch)
+ * 4. Raw printable token scan
  */
 async function extractPdfText(buffer) {
   ensurePdfPolyfills();
+
+  // Tier 1: Primary unpdf engine (Serverless safe)
+  try {
+    const { getDocumentProxy, extractText } = await import('unpdf');
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const res = await extractText(pdf, { mergePages: true });
+    const text = typeof res.text === 'string' ? res.text : (Array.isArray(res.text) ? res.text.join('\n\n') : '');
+    if (text && text.trim().length > 0) {
+      return text;
+    }
+  } catch (unpdfErr) {
+    console.warn('unpdf extraction tier failed, attempting fallback:', unpdfErr.message);
+  }
+
+  // Tier 2: Pure JS zlib stream extractor (Immune to worker/environment issues)
+  try {
+    const pureText = extractPdfTextPureJs(buffer);
+    if (pureText && pureText.trim().length > 0) {
+      return pureText;
+    }
+  } catch (pureErr) {
+    console.warn('Pure JS PDF extraction tier failed, attempting fallback:', pureErr.message);
+  }
+
+  // Tier 3: pdf-parse fallback
   try {
     const pdfModule = require('pdf-parse');
-
-    // 1. pdf-parse v2.x (exports PDFParse class)
     if (pdfModule && pdfModule.PDFParse) {
       const parser = new pdfModule.PDFParse({ data: buffer });
       try {
         const data = await parser.getText();
-        if (data && typeof data.text === 'string') {
+        if (data && typeof data.text === 'string' && data.text.trim()) {
           return data.text;
         }
-        return '';
       } finally {
         if (typeof parser.destroy === 'function') {
           try { await parser.destroy(); } catch (_) {}
         }
       }
-    }
-
-    // 2. pdf-parse v1.x (direct callable function)
-    if (typeof pdfModule === 'function') {
+    } else if (typeof pdfModule === 'function') {
       const data = await pdfModule(buffer);
-      return (data && data.text) ? data.text : '';
+      if (data && data.text && data.text.trim()) {
+        return data.text;
+      }
     }
-
-    // 3. Default export fallback
-    if (pdfModule && typeof pdfModule.default === 'function') {
-      const data = await pdfModule.default(buffer);
-      return (data && data.text) ? data.text : '';
-    }
-
-    throw new Error('Unsupported pdf-parse module format');
-  } catch (err) {
-    throw new Error(`PDF text extraction failed: ${err.message}`);
+  } catch (pdfParseErr) {
+    console.warn('pdf-parse fallback tier failed:', pdfParseErr.message);
   }
+
+  // Tier 4: Raw printable text sequence extraction
+  const rawString = buffer.toString('utf8');
+  const printableMatches = rawString.match(/[A-Za-z0-9\s.,?!:;'"()\-+/*=<>]{15,}/g);
+  if (printableMatches && printableMatches.length > 0) {
+    return printableMatches.join('\n');
+  }
+
+  throw new Error('No readable text could be extracted from the document. The file may be an image-only scan, password-protected, or empty.');
 }
 
 /**
@@ -197,4 +315,3 @@ module.exports = {
   extractDocxText,
   parseWordXmlToText
 };
-
