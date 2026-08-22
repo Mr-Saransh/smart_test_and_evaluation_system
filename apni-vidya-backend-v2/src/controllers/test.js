@@ -256,6 +256,9 @@ async function getForStudent(req, res, next) {
 
     const testRow = test.rows[0];
 
+    let attemptsUsed = 0;
+    let lastSubmission = null;
+
     // Authorization & Window check
     if (req.user.role === 'student') {
       const student = await getStudentForUser(req.user.id);
@@ -270,6 +273,17 @@ async function getForStudent(req, res, next) {
       // Check closed window
       if (testRow.end_date && new Date() > new Date(testRow.end_date)) {
         return res.status(400).json({ error: 'This test window has closed.' });
+      }
+
+      // Check existing attempts
+      const prevSub = await db.query(
+        `SELECT id, score, max_marks, rank, submitted_at, time_taken_min, attempt_number
+         FROM test_submissions WHERE test_id = $1 AND student_id = $2 ORDER BY attempt_number DESC LIMIT 1`,
+        [test_id, student.id]
+      );
+      if (prevSub.rows.length > 0) {
+        attemptsUsed = prevSub.rows[0].attempt_number;
+        lastSubmission = prevSub.rows[0];
       }
     } else if (!(await hasBatchAccess(req.user, testRow.batch_id))) {
       return res.status(403).json({ error: 'Not authorized for this test' });
@@ -297,7 +311,15 @@ async function getForStudent(req, res, next) {
       end_date: testRow.end_date,
     };
 
-    res.json({ test: sanitizedTest, questions: questions.rows });
+    const isCompleted = attemptsUsed >= (testRow.attempt_limit || 1);
+
+    res.json({
+      test: sanitizedTest,
+      questions: questions.rows,
+      already_completed: isCompleted,
+      attempts_used: attemptsUsed,
+      submission: lastSubmission
+    });
   } catch (err) { next(err); }
 }
 
@@ -340,7 +362,16 @@ async function submit(req, res, next) {
     
     if (attempt_number > testRow.attempt_limit) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Attempt limit reached for this test' });
+      const lastSub = await db.query(
+        `SELECT id, score, max_marks, rank, submitted_at, time_taken_min, attempt_number
+         FROM test_submissions WHERE test_id = $1 AND student_id = $2 ORDER BY attempt_number DESC LIMIT 1`,
+        [test_id, student.id]
+      );
+      return res.status(400).json({
+        error: 'Attempt limit reached for this test',
+        already_completed: true,
+        submission: lastSub.rows[0] || null
+      });
     }
 
     // Auto-grade objective MCQs against correct_index

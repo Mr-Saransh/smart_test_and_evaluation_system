@@ -12,6 +12,7 @@ import {
   TrophyIcon
 } from '../../components/common/Icons';
 import { Modal } from '../../components/common/Modal';
+import { getScoreColor } from '../../utils/helpers';
 
 const MAX_WARNINGS = 3;
 
@@ -30,6 +31,9 @@ export function TestPlayer() {
   const [startTime, setStartTime] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Palette drawer state (closed on mobile by default)
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
   // Anti-Cheat & Integrity State
   const [hasStarted, setHasStarted] = useState(false);
   const [warnings, setWarnings] = useState(0);
@@ -44,6 +48,13 @@ export function TestPlayer() {
   const [result, setResult] = useState(null);
   const [submitReason, setSubmitReason] = useState('');
 
+  // Auto-open palette on wide screens on initial load
+  useEffect(() => {
+    if (window.innerWidth >= 1024) {
+      setPaletteOpen(true);
+    }
+  }, []);
+
   // Load Test Data and Sync Local Attempt
   useEffect(() => {
     if (!user || !test_id) return;
@@ -52,6 +63,22 @@ export function TestPlayer() {
     GET(`/tests/student/${test_id}`)
       .then(res => {
         setData(res);
+
+        // If student already completed all attempts, exit fullscreen and show result screen immediately
+        if (res.already_completed) {
+          if (user) {
+            localStorage.removeItem(sessionKey);
+          }
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+          }
+          setSubmitted(true);
+          setHasStarted(false);
+          setResult(res.submission || { score: 0, max_marks: res.test?.total_marks || 0 });
+          setSubmitReason('You have already completed all attempts for this assessment.');
+          return;
+        }
+
         const durationSec = (res.test.duration_min || 30) * 60;
 
         try {
@@ -59,43 +86,44 @@ export function TestPlayer() {
           if (cached) {
             const parsed = JSON.parse(cached);
             const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
-            if (elapsed < durationSec && !parsed.submitted) {
-              setStartTime(parsed.startTime);
-              setTimeRemaining(durationSec - elapsed);
-              if (parsed.answers) setAnswers(parsed.answers);
-              if (parsed.markedForReview) setMarkedForReview(parsed.markedForReview);
-              if (parsed.securityEvents) setSecurityEvents(parsed.securityEvents);
-              setLoading(false);
-              return;
-            } else {
-              localStorage.removeItem(sessionKey);
-            }
-          }
-        } catch (e) {}
+            const remain = Math.max(0, durationSec - elapsed);
 
-        const now = Date.now();
-        setStartTime(now);
-        setTimeRemaining(durationSec);
-        localStorage.setItem(sessionKey, JSON.stringify({
-          startTime: now,
-          answers: {},
-          markedForReview: {},
-          securityEvents: [],
-          submitted: false
-        }));
+            setAnswers(parsed.answers || {});
+            setMarkedForReview(parsed.markedForReview || {});
+            setStartTime(parsed.startTime || Date.now());
+            setTimeRemaining(remain);
+            setSecurityEvents(parsed.securityEvents || []);
+            setHasStarted(Boolean(parsed.hasStarted));
+
+            if (remain <= 0 && parsed.hasStarted) {
+              handleSubmit(true, 'Test resumed after timer expired.');
+            }
+          } else {
+            const now = Date.now();
+            setStartTime(now);
+            setTimeRemaining(durationSec);
+            localStorage.setItem(
+              sessionKey,
+              JSON.stringify({ startTime: now, answers: {}, markedForReview: {}, securityEvents: [], hasStarted: false })
+            );
+          }
+        } catch (e) {
+          setStartTime(Date.now());
+          setTimeRemaining(durationSec);
+        }
       })
       .catch(err => {
-        toast(err.message || 'Error loading test');
+        toast(err.message || 'Failed to load assessment');
         navigate('/student/tests');
       })
       .finally(() => setLoading(false));
-  }, [test_id, navigate, user]);
+  }, [test_id, user, navigate]);
 
-  // Record Security Event Helper
-  const logSecurityViolation = useCallback((type, detail) => {
+  // Log Security Violation
+  const logSecurityViolation = useCallback((type, details) => {
     const event = {
       type,
-      detail,
+      details,
       timestamp: new Date().toISOString()
     };
     setSecurityEvents(prev => {
@@ -138,7 +166,23 @@ export function TestPlayer() {
       }
       toast(isAuto ? 'Assessment auto-submitted.' : 'Assessment submitted successfully!', 'success');
     } catch (err) {
-      toast(err.message || 'Error submitting assessment');
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      if (user) {
+        localStorage.removeItem(`av2_test_session_${test_id}_${user.id}`);
+      }
+
+      if (err.message && err.message.toLowerCase().includes('attempt limit')) {
+        setSubmitted(true);
+        setHasStarted(false);
+        setResult(err.submission || result || { score: 0, max_marks: data?.test?.total_marks || 0 });
+        setSubmitReason('Assessment already submitted (Attempt limit reached).');
+        toast('Assessment already recorded. Redirecting to evaluation report...', 'info');
+        setTimeout(() => navigate(`/report/${test_id}`), 1200);
+      } else {
+        toast(err.message || 'Error submitting assessment');
+      }
     } finally {
       setSubmitting(false);
       setShowConfirmModal(false);
@@ -309,6 +353,16 @@ export function TestPlayer() {
     setHasStarted(true);
   };
 
+  const handleSafeExit = () => {
+    if (window.confirm('Are you sure you want to exit this assessment? Your current session will be saved locally.')) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setHasStarted(false);
+      navigate('/student/tests');
+    }
+  };
+
   const resumeFromWarning = () => {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
@@ -335,39 +389,39 @@ export function TestPlayer() {
   // Post-Submission Screen
   if (submitted && result) {
     return (
-      <div className="animate-fade-in" style={{ padding: 40, maxWidth: 680, margin: '40px auto' }}>
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: submitReason ? 'var(--color-error-bg)' : 'var(--color-success-bg)', color: submitReason ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
-            <CheckCircleIcon size={44} />
+      <div className="animate-fade-in" style={{ padding: '24px 16px', maxWidth: 680, margin: '20px auto' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '32px 24px' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: submitReason ? 'var(--color-error-bg)' : 'var(--color-success-bg)', color: submitReason ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
+            <CheckCircleIcon size={40} />
           </div>
-          <h1 className="h1" style={{ marginBottom: 8 }}>{submitReason ? 'Assessment Submitted' : 'Assessment Completed!'}</h1>
-          <p className="muted" style={{ marginBottom: 28, fontSize: 14 }}>
+          <h1 className="h1" style={{ marginBottom: 8, fontSize: '1.5rem' }}>{submitReason ? 'Assessment Submitted' : 'Assessment Completed!'}</h1>
+          <p className="muted" style={{ marginBottom: 24, fontSize: 14 }}>
             {submitReason || 'Your responses have been recorded and auto-evaluated.'}
           </p>
 
           {/* Quick Score Card */}
-          <div className="g3" style={{ marginBottom: 32 }}>
-            <div className="card sc" style={{ background: 'var(--bg-subtle)' }}>
+          <div className="g3" style={{ marginBottom: 28 }}>
+            <div className="card sc" style={{ background: 'var(--bg-subtle)', padding: 16 }}>
               <div className="muted" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Score</div>
-              <div className="sn" style={{ color: 'var(--color-primary)', fontSize: '2rem' }}>
+              <div className="sn" style={{ color: 'var(--color-primary)', fontSize: '1.75rem' }}>
                 {result.score} / {result.max_marks}
               </div>
             </div>
-            <div className="card sc" style={{ background: 'var(--bg-subtle)' }}>
+            <div className="card sc" style={{ background: 'var(--bg-subtle)', padding: 16 }}>
               <div className="muted" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Accuracy</div>
-              <div className="sn" style={{ color: getScoreColor(result.stats?.accuracy || 0), fontSize: '2rem' }}>
+              <div className="sn" style={{ color: getScoreColor(result.stats?.accuracy || 0), fontSize: '1.75rem' }}>
                 {result.stats?.accuracy || 0}%
               </div>
             </div>
-            <div className="card sc" style={{ background: 'var(--bg-subtle)' }}>
+            <div className="card sc" style={{ background: 'var(--bg-subtle)', padding: 16 }}>
               <div className="muted" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Time Taken</div>
-              <div className="sn" style={{ fontSize: '2rem' }}>
+              <div className="sn" style={{ fontSize: '1.75rem' }}>
                 {result.time_taken_min || 1}m
               </div>
             </div>
           </div>
 
-          <div className="fx" style={{ gap: 12, justifyContent: 'center' }}>
+          <div className="fx fw" style={{ gap: 12, justifyContent: 'center' }}>
             <button className="btn bp" onClick={() => navigate(`/report/${test_id}`)}>
               View Detailed Evaluation Report →
             </button>
@@ -383,16 +437,16 @@ export function TestPlayer() {
   // Pre-Exam Instruction Gate
   if (!hasStarted) {
     return (
-      <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 24, background: 'var(--bg-primary)' }}>
-        <div className="card" style={{ maxWidth: 640, width: '100%', padding: 40, border: '1px solid var(--border-light)' }}>
-          <div className="fxb" style={{ marginBottom: 16 }}>
+      <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '24px 16px', background: 'var(--bg-primary)' }}>
+        <div className="card" style={{ maxWidth: 640, width: '100%', padding: '32px 24px', border: '1px solid var(--border-light)' }}>
+          <div className="fxb" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
             <span className="badge" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', fontWeight: 700 }}>
               {data.test.subject || 'General Assessment'}
             </span>
             <span className="muted" style={{ fontSize: 13 }}>Duration: <strong>{data.test.duration_min} Mins</strong></span>
           </div>
 
-          <h1 className="h1" style={{ marginBottom: 8 }}>{data.test.title}</h1>
+          <h1 className="h1" style={{ marginBottom: 8, fontSize: '1.5rem' }}>{data.test.title}</h1>
           <p className="muted" style={{ marginBottom: 24, fontSize: 14 }}>
             Please read the instructions carefully before entering the examination environment.
           </p>
@@ -448,15 +502,14 @@ export function TestPlayer() {
           <div style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, marginBottom: 24 }}>
             Warning {warnings} of {MAX_WARNINGS}. You have {MAX_WARNINGS - warnings} warning(s) remaining before auto-submission.
           </div>
-          <button className="btn bp w-full" style={{ background: 'var(--color-error)', borderColor: 'var(--color-error)', justifyContent: 'center' }} onClick={resumeFromWarning}>
-            Return to Fullscreen & Resume
+          <button className="btn bp w-full" style={{ justifyContent: 'center' }} onClick={resumeFromWarning}>
+            I Understand — Resume Assessment
           </button>
         </div>
       </div>
     );
   }
 
-  // Timer format
   const mins = Math.floor(timeRemaining / 60);
   const secs = timeRemaining % 60;
   const timeStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -466,75 +519,133 @@ export function TestPlayer() {
   const isAnswered = answers[currentQ.id] !== undefined;
   const isMarked = Boolean(markedForReview[currentQ.id]);
 
+  const handlePaletteSelect = (idx) => {
+    setCurrentIndex(idx);
+    if (window.innerWidth < 1024) {
+      setPaletteOpen(false);
+    }
+  };
+
   return (
-    <div className="animate-fade-in exam-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', userSelect: 'none', WebkitUserSelect: 'none', background: 'var(--bg-primary)' }}>
+    <div className="animate-fade-in exam-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', userSelect: 'none', WebkitUserSelect: 'none', background: 'var(--bg-primary)', position: 'relative' }}>
       
       {/* Top Examination Header */}
-      <div className="fxb" style={{ padding: '12px 24px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', zIndex: 10 }}>
-        <div>
-          <h2 className="h3" style={{ marginBottom: 2 }}>{data.test.title}</h2>
-          <div className="muted" style={{ fontSize: 12 }}>
+      <div className="fxb" style={{ padding: '10px 16px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-light)', zIndex: 10, flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 className="h3" style={{ marginBottom: 2, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{data.test.title}</h2>
+          <div className="muted" style={{ fontSize: 11 }}>
             {data.test.subject} &bull; Question {currentIndex + 1} of {totalQuestions}
           </div>
         </div>
 
-        <div className="fx" style={{ gap: 16, alignItems: 'center' }}>
+        <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
           {/* Live Timer */}
           <div
             className="card"
             style={{
-              padding: '6px 14px',
+              padding: '6px 10px',
               background: isTimeLow ? 'var(--color-error-bg)' : 'var(--bg-subtle)',
               color: isTimeLow ? 'var(--color-error)' : 'var(--text-primary)',
               border: isTimeLow ? '1px solid var(--color-error)' : '1px solid var(--border-light)',
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 6,
               borderRadius: 8
             }}
           >
-            <ClockIcon size={16} />
-            <span style={{ fontSize: 15, fontWeight: 800, fontFamily: 'monospace' }}>{timeStr}</span>
+            <ClockIcon size={15} />
+            <span style={{ fontSize: 14, fontWeight: 800, fontFamily: 'monospace' }}>{timeStr}</span>
           </div>
 
-          <button className="btn bp" onClick={() => setShowConfirmModal(true)}>
+          {/* Question Palette Toggle Button */}
+          <button
+            type="button"
+            className="btn bs bsm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 12 }}
+            onClick={() => setPaletteOpen(prev => !prev)}
+            title="Toggle Question Palette"
+          >
+            <span>{paletteOpen ? '✕ Hide' : `☰ Palette (${answeredCount}/${totalQuestions})`}</span>
+          </button>
+
+          <button className="btn bp bsm" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setShowConfirmModal(true)}>
             Submit Test
+          </button>
+
+          <button
+            type="button"
+            className="btn bs bsm"
+            style={{ padding: '6px 10px', fontSize: 12, color: 'var(--color-error)' }}
+            onClick={handleSafeExit}
+            title="Exit Assessment"
+          >
+            ✕ Exit
           </button>
         </div>
       </div>
 
+      {/* Floating Edge Toggle Tab on Right Screen Edge */}
+      {!paletteOpen && (
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          style={{
+            position: 'fixed',
+            right: 0,
+            top: '40%',
+            transform: 'translateY(-50%)',
+            background: 'var(--color-primary)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px 0 0 8px',
+            padding: '12px 6px',
+            boxShadow: '-2px 4px 14px rgba(0,0,0,0.2)',
+            zIndex: 40,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+            cursor: 'pointer'
+          }}
+          title="Open Question Palette"
+        >
+          <span style={{ fontSize: 12, fontWeight: 900 }}>◀</span>
+          <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', letterSpacing: 1, fontWeight: 800, fontSize: 10 }}>PALETTE</span>
+        </button>
+      )}
+
       {/* Main Examination Body */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         
-        {/* Question Area */}
-        <div style={{ flex: 1, padding: 32, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <div className="card" style={{ maxWidth: 840, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column', padding: 28 }}>
+        {/* Question Area (takes 100% width when palette is closed/mobile) */}
+        <div style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', width: '100%', boxSizing: 'border-box' }}>
+          <div className="card" style={{ maxWidth: 840, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 16px', boxSizing: 'border-box' }}>
             
             {/* Question Top Info Bar */}
-            <div className="fxb" style={{ marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--border-light)' }}>
-              <div className="fx" style={{ gap: 10, alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
+            <div className="fxb" style={{ marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--border-light)' }}>
+              <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>
                   Question {currentIndex + 1}
                 </span>
                 {isMarked && (
-                  <span className="badge" style={{ background: '#f3e8ff', color: '#9333ea', fontWeight: 700 }}>
-                    ⚑ Marked for Review
+                  <span className="badge" style={{ background: '#f3e8ff', color: '#9333ea', fontWeight: 700, fontSize: 11 }}>
+                    ⚑ Review
                   </span>
                 )}
               </div>
-              <div className="badge" style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)' }}>
+              <div className="badge" style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
                 +{currentQ.marks || 1} Marks {currentQ.negative_marks > 0 ? `| -${currentQ.negative_marks}` : ''}
               </div>
             </div>
 
             {/* Question Statement */}
-            <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.6, marginBottom: 28, color: 'var(--text-primary)' }}>
+            <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.6, marginBottom: 20, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
               {currentQ.text}
             </div>
 
             {/* Options List */}
             {currentQ.options && Array.isArray(currentQ.options) && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                 {currentQ.options.map((opt, oIdx) => {
                   const isSelected = answers[currentQ.id] === oIdx;
                   const optLabel = String.fromCharCode(65 + oIdx);
@@ -544,8 +655,8 @@ export function TestPlayer() {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '14px 18px',
-                        borderRadius: 10,
+                        padding: '12px 14px',
+                        borderRadius: 8,
                         border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
                         background: isSelected ? 'var(--color-primary-bg)' : 'var(--bg-surface)',
                         cursor: 'pointer',
@@ -557,12 +668,12 @@ export function TestPlayer() {
                         name={`q_${currentQ.id}`}
                         checked={isSelected}
                         onChange={() => handleOptionSelect(currentQ.id, oIdx)}
-                        style={{ marginRight: 14, width: 18, height: 18 }}
+                        style={{ marginRight: 12, width: 18, height: 18, flexShrink: 0 }}
                       />
-                      <span style={{ fontWeight: 700, marginRight: 10, color: isSelected ? 'var(--color-primary)' : 'var(--text-secondary)' }}>
+                      <span style={{ fontWeight: 700, marginRight: 8, color: isSelected ? 'var(--color-primary)' : 'var(--text-secondary)', flexShrink: 0 }}>
                         {optLabel}.
                       </span>
-                      <span style={{ fontSize: 15, fontWeight: isSelected ? 600 : 400, color: 'var(--text-primary)' }}>
+                      <span style={{ fontSize: 14, fontWeight: isSelected ? 600 : 400, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
                         {opt}
                       </span>
                     </label>
@@ -572,40 +683,43 @@ export function TestPlayer() {
             )}
 
             {/* Bottom Actions Bar */}
-            <div className="fxb" style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: 12 }}>
-              <div className="fx" style={{ gap: 10 }}>
+            <div className="fxb" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: 10 }}>
+              <div className="fx" style={{ gap: 8 }}>
                 <button
                   type="button"
                   className={`btn ${isMarked ? 'bp' : 'bs'} bsm`}
                   onClick={() => handleToggleMarkForReview(currentQ.id)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '8px 10px' }}
                 >
-                  <FlagIcon size={14} /> {isMarked ? 'Unmark Review' : 'Mark for Review'}
+                  <FlagIcon size={13} /> {isMarked ? 'Unmark' : 'Mark Review'}
                 </button>
                 {isAnswered && (
                   <button
                     type="button"
                     className="btn bd bsm"
+                    style={{ fontSize: 12, padding: '8px 10px' }}
                     onClick={() => handleClearAnswer(currentQ.id)}
                   >
-                    Clear Response
+                    Clear
                   </button>
                 )}
               </div>
 
-              <div className="fx" style={{ gap: 10 }}>
+              <div className="fx" style={{ gap: 8 }}>
                 <button
                   type="button"
-                  className="btn bs"
+                  className="btn bs bsm"
+                  style={{ fontSize: 12, padding: '8px 14px' }}
                   disabled={currentIndex === 0}
                   onClick={() => setCurrentIndex(prev => prev - 1)}
                 >
-                  ← Previous
+                  ← Prev
                 </button>
                 {currentIndex < totalQuestions - 1 ? (
                   <button
                     type="button"
-                    className="btn bp"
+                    className="btn bp bsm"
+                    style={{ fontSize: 12, padding: '8px 14px' }}
                     onClick={() => setCurrentIndex(prev => prev + 1)}
                   >
                     Next →
@@ -613,10 +727,11 @@ export function TestPlayer() {
                 ) : (
                   <button
                     type="button"
-                    className="btn bp"
+                    className="btn bp bsm"
+                    style={{ fontSize: 12, padding: '8px 14px' }}
                     onClick={() => setShowConfirmModal(true)}
                   >
-                    Review & Submit
+                    Submit
                   </button>
                 )}
               </div>
@@ -625,82 +740,131 @@ export function TestPlayer() {
           </div>
         </div>
 
-        {/* Question Palette Sidebar */}
-        <div style={{ width: 280, background: 'var(--bg-surface)', borderLeft: '1px solid var(--border-light)', padding: 20, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-          <h3 className="h4" style={{ marginBottom: 14 }}>Question Palette</h3>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 24 }}>
-            {data.questions.map((q, i) => {
-              const answered = answers[q.id] !== undefined;
-              const reviewed = Boolean(markedForReview[q.id]);
-              const isCurrent = currentIndex === i;
+        {/* Mobile Backdrop Overlay */}
+        {paletteOpen && (
+          <div
+            onClick={() => setPaletteOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(15, 23, 42, 0.5)',
+              zIndex: 90,
+              display: window.innerWidth < 1024 ? 'block' : 'none'
+            }}
+          />
+        )}
 
-              let bg = 'var(--bg-subtle)';
-              let color = 'var(--text-primary)';
-              let border = '1px solid var(--border-light)';
-
-              if (answered && reviewed) {
-                bg = '#10b981';
-                color = '#fff';
-                border = '2px solid #9333ea';
-              } else if (reviewed) {
-                bg = '#f3e8ff';
-                color = '#9333ea';
-                border = '1px solid #c084fc';
-              } else if (answered) {
-                bg = 'var(--color-success)';
-                color = '#fff';
-                border = 'none';
-              }
-
-              if (isCurrent) {
-                border = '2px solid var(--color-primary)';
-              }
-
-              return (
+        {/* Question Palette Drawer / Sidebar */}
+        <div
+          style={{
+            position: window.innerWidth < 1024 ? 'fixed' : 'relative',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: window.innerWidth < 1024 ? 'min(320px, 85vw)' : (paletteOpen ? 280 : 0),
+            background: 'var(--bg-surface)',
+            borderLeft: paletteOpen ? '1px solid var(--border-light)' : 'none',
+            padding: paletteOpen ? '20px 16px' : 0,
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            zIndex: 100,
+            transition: 'all 0.25s ease',
+            transform: (paletteOpen || window.innerWidth >= 1024) && paletteOpen ? 'translateX(0)' : 'translateX(100%)',
+            boxShadow: paletteOpen && window.innerWidth < 1024 ? '-4px 0 24px rgba(0,0,0,0.25)' : 'none'
+          }}
+        >
+          {paletteOpen && (
+            <>
+              <div className="fxb" style={{ marginBottom: 14, alignItems: 'center' }}>
+                <h3 className="h4" style={{ fontSize: '0.95rem' }}>Question Palette</h3>
                 <button
-                  key={q.id}
                   type="button"
-                  onClick={() => setCurrentIndex(i)}
-                  style={{
-                    aspectRatio: '1',
-                    borderRadius: 6,
-                    background: bg,
-                    color,
-                    border,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}
+                  className="btn bs bsm"
+                  style={{ padding: '4px 8px', fontSize: 11 }}
+                  onClick={() => setPaletteOpen(false)}
                 >
-                  {i + 1}
-                  {reviewed && (
-                    <span style={{ position: 'absolute', top: 1, right: 2, fontSize: 8 }}>⚑</span>
-                  )}
+                  ✕ Close
                 </button>
-              );
-            })}
-          </div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
+                {data.questions.map((q, i) => {
+                  const answered = answers[q.id] !== undefined;
+                  const reviewed = Boolean(markedForReview[q.id]);
+                  const isCurrent = currentIndex === i;
 
-          {/* Palette Legend */}
-          <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
-            <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
-              <div style={{ width: 14, height: 14, background: 'var(--color-success)', borderRadius: 3 }} />
-              <span>Answered ({answeredCount})</span>
-            </div>
-            <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
-              <div style={{ width: 14, height: 14, background: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: 3 }} />
-              <span>Unanswered ({unansweredCount})</span>
-            </div>
-            <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
-              <div style={{ width: 14, height: 14, background: '#f3e8ff', border: '1px solid #c084fc', borderRadius: 3 }} />
-              <span>Marked for Review ({reviewCount})</span>
-            </div>
-          </div>
+                  let bg = 'var(--bg-subtle)';
+                  let color = 'var(--text-primary)';
+                  let border = '1px solid var(--border-light)';
+
+                  if (answered && reviewed) {
+                    bg = '#10b981';
+                    color = '#fff';
+                    border = '2px solid #9333ea';
+                  } else if (reviewed) {
+                    bg = '#f3e8ff';
+                    color = '#9333ea';
+                    border = '1px solid #c084fc';
+                  } else if (answered) {
+                    bg = 'var(--color-success)';
+                    color = '#fff';
+                    border = 'none';
+                  }
+
+                  if (isCurrent) {
+                    border = '2px solid var(--color-primary)';
+                  }
+
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => handlePaletteSelect(i)}
+                      style={{
+                        aspectRatio: '1',
+                        borderRadius: 6,
+                        background: bg,
+                        color,
+                        border,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        position: 'relative'
+                      }}
+                    >
+                      {i + 1}
+                      {reviewed && (
+                        <span style={{ position: 'absolute', top: 1, right: 2, fontSize: 8 }}>⚑</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Palette Legend */}
+              <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
+                <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
+                  <div style={{ width: 12, height: 12, background: 'var(--color-success)', borderRadius: 3 }} />
+                  <span>Answered ({answeredCount})</span>
+                </div>
+                <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
+                  <div style={{ width: 12, height: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: 3 }} />
+                  <span>Unanswered ({unansweredCount})</span>
+                </div>
+                <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
+                  <div style={{ width: 12, height: 12, background: '#f3e8ff', border: '1px solid #c084fc', borderRadius: 3 }} />
+                  <span>Marked for Review ({reviewCount})</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
       </div>
