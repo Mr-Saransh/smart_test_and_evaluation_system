@@ -11,18 +11,29 @@ let _transporter = null;
 function getTransporter() {
   if (_transporter) return _transporter;
 
-  const email = process.env.SMTP_EMAIL;
-  const pass = process.env.SMTP_APP_PASSWORD;
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const user = process.env.SMTP_USER || process.env.SMTP_EMAIL;
+  const pass = process.env.SMTP_PASS || process.env.SMTP_APP_PASSWORD;
 
-  if (!email || !pass) {
-    console.warn('[email] SMTP_EMAIL or SMTP_APP_PASSWORD not set — emails will be logged to console only.');
+  if (!user || !pass) {
+    console.warn('[email] SMTP_EMAIL/SMTP_USER or SMTP_APP_PASSWORD/SMTP_PASS not set — emails will be logged to console only.');
     return null;
   }
 
-  _transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: email, pass },
-  });
+  if (host) {
+    _transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+  } else {
+    _transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    });
+  }
 
   return _transporter;
 }
