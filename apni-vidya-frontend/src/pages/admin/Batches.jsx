@@ -90,21 +90,9 @@ export function Batches() {
         }
       } else {
         const res = await POST('/batches', body, 'Batch created');
-        if (res.capacity > 0) {
-          payBatchSubscription(res.id, 'creation', 0, async (success) => {
-            if (success) {
-              setShow(false); load();
-              openDetails(res);
-            } else {
-              // Delete the batch since payment failed/was cancelled
-              await DEL(`/batches/${res.id}`);
-              toast('Batch creation cancelled (payment not completed)', 'error');
-              setShow(false); load();
-            }
-          });
-        } else {
-          setShow(false); load();
-        }
+        setShow(false);
+        load();
+        if (res && res.id) openDetails(res);
       }
     } catch { /* */ }
     setSaving(false);
@@ -570,28 +558,17 @@ export function Batches() {
         </div>
         <div className="g2">
           <div className="field">
-            <label>Capacity</label>
-            {!editing ? (
-              <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 16, marginTop: 8 }}>
-                <div className="fxb" style={{ marginBottom: 16 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Select Capacity</span>
-                  <div style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>
-                    {form.capacity || 100} Students
-                  </div>
-                </div>
-                <input 
-                  className="inp" type="range" min="100" max="1000" step="10" 
-                  value={form.capacity || 100} onChange={setF('capacity')} 
-                  style={{ width: '100%', accentColor: 'var(--color-primary)', height: 6, cursor: 'pointer' }}
-                />
-                <div className="fxb" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--border-color)' }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>Monthly Fee (@ ₹80)</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-success)' }}>{formatCurrency((form.capacity || 100) * 80)}</span>
-                </div>
-              </div>
-            ) : (
-              <input className="inp" type="number" value={form.capacity} disabled placeholder="Use 'Upgrade Capacity' to change" />
-            )}
+            <label>Batch Student Capacity</label>
+            <input 
+              className="inp" 
+              type="number" 
+              value={form.capacity} 
+              onChange={setF('capacity')} 
+              placeholder="e.g. 100 (Unlimited batches included in plan)" 
+            />
+            <div className="field-hint" style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>
+              Unlimited batches included in your institute plan (₹80/student billed monthly).
+            </div>
           </div>
           <div className="field">
             <label>Google Meet Link</label>

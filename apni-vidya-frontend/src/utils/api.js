@@ -187,3 +187,50 @@ export async function payBatchSubscription(batchId, type, additionalCapacity, on
   });
   rzp.open();
 }
+
+export async function payInstituteSubscription(instituteId, onDone) {
+  let order;
+  try {
+    order = await POST(`/institutes/${instituteId}/subscription/order`);
+  } catch (err) {
+    if (onDone) onDone(false, err);
+    return;
+  }
+
+  try {
+    await loadRazorpay();
+  } catch (e) {
+    toast(e.message);
+    if (onDone) onDone(false, e);
+    return;
+  }
+
+  const rzp = new window.Razorpay({
+    key: order.key_id,
+    amount: order.amount,
+    currency: order.currency,
+    order_id: order.order_id,
+    name: 'Apni Vidya LMS',
+    description: `Monthly Subscription (${order.student_count || 0} Students × ₹${order.rate_per_student || 80})`,
+    handler: async (resp) => {
+      try {
+        const verifyRes = await POST(`/institutes/${instituteId}/subscription/verify`, {
+          razorpay_order_id: resp.razorpay_order_id,
+          razorpay_payment_id: resp.razorpay_payment_id,
+          razorpay_signature: resp.razorpay_signature,
+        }, 'Subscription activated successfully!');
+        if (onDone) onDone(true, verifyRes);
+      } catch (err) { 
+        if (onDone) onDone(false, err);
+      }
+    },
+    modal: {
+      ondismiss: function() {
+        if (onDone) onDone(false);
+      }
+    },
+    theme: { color: '#4f46e5' },
+  });
+  rzp.open();
+}
+

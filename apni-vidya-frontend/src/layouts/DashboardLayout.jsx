@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { GraduationCapIcon, LogOutIcon, SearchIcon, BellIcon } from '../components/common/Icons';
 import { NAV_ITEMS, ROLE_LABELS, MOBILE_NAV, ROLE_HOME, flatNavItems } from '../utils/constants';
 import { getInitials } from '../utils/helpers';
+import { TrialAlertBanner } from '../components/common/TrialAlertBanner';
 import './DashboardLayout.css';
 
 export function DashboardLayout() {
@@ -188,6 +189,7 @@ export function DashboardLayout() {
 
         {/* Page Content */}
         <div className="page-content">
+          <TrialAlertBanner />
           <Outlet />
         </div>
 

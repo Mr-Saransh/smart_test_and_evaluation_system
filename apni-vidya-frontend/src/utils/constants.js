@@ -68,7 +68,8 @@ export const NAV_ITEMS = {
       { id: 'live-classes', label: 'Live Classes', path: '/admin/live-classes', icon: VideoIcon },
     ]},
     { group: 'Finance', items: [
-      { id: 'fees', label: 'Fees', path: '/admin/fees', icon: CurrencyIcon },
+      { id: 'fees', label: 'Student Fees', path: '/admin/fees', icon: CurrencyIcon },
+      { id: 'billing', label: 'Billing & Plan', path: '/admin/billing', icon: CurrencyIcon },
     ]},
     { group: 'Communication', items: [
       { id: 'announcements', label: 'Announcements', path: '/admin/announcements', icon: MegaphoneIcon },

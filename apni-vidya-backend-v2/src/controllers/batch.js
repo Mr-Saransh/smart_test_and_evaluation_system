@@ -21,12 +21,11 @@ async function create(req, res, next) {
 
     const result = await db.query(
       `INSERT INTO batches (institute_id, name, description, start_date, end_date, meet_link, capacity, payment_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
        RETURNING *`,
       [
         institute_id, name, description || null, start_date || null, end_date || null, meet_link || null, 
-        capacity || null, 
-        capacity ? 'pending' : 'active'
+        capacity || null
       ]
     );
 

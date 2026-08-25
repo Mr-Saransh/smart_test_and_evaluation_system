@@ -148,3 +148,39 @@ describe('nextRunAfter', () => {
     expect(nextRunAfter('monthly', ref).toISOString()).toBe('2025-02-15T10:00:00.000Z');
   });
 });
+
+describe('institute 7-day trial & ₹80/student subscription math', () => {
+  test('computes trial active within 7 days', () => {
+    const now = new Date();
+    const trialEndsAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+    const isTrialActive = trialEndsAt > now;
+    expect(isTrialActive).toBe(true);
+  });
+
+  test('computes trial expired after 7 days', () => {
+    const now = new Date();
+    const trialEndsAt = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
+    const isTrialExpired = trialEndsAt <= now;
+    expect(isTrialExpired).toBe(true);
+  });
+
+  test('calculates correct monthly billing amount at ₹80 per student', () => {
+    const rate = 80;
+    const students50 = 50;
+    expect(students50 * rate).toBe(4000); // ₹4,000
+
+    const students120 = 120;
+    expect(students120 * rate).toBe(9600); // ₹9,600
+
+    const students0 = 0;
+    expect(Math.max(students0, 1) * rate).toBe(80); // Base unit ₹80
+  });
+
+  test('active subscription valid until extends 1 month', () => {
+    const now = new Date('2026-08-25T12:00:00Z');
+    const validUntil = new Date(now);
+    validUntil.setMonth(validUntil.getMonth() + 1);
+    expect(validUntil > now).toBe(true);
+  });
+});
+

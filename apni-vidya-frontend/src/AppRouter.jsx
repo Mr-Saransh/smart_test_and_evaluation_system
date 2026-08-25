@@ -56,6 +56,7 @@ const Announcements = lazyRetry(() => import('./pages/admin/Announcements').then
 const Notifications = lazyRetry(() => import('./pages/admin/Notifications').then(m => ({ default: m.Notifications })));
 const Reports = lazyRetry(() => import('./pages/admin/Reports').then(m => ({ default: m.Reports })));
 const Settings = lazyRetry(() => import('./pages/admin/Settings').then(m => ({ default: m.Settings })));
+const Billing = lazyRetry(() => import('./pages/admin/Billing').then(m => ({ default: m.Billing })));
 
 // Student Portal
 const StudentPortal = lazyRetry(() => import('./pages/student/StudentPortal').then(m => ({ default: m.StudentPortal })));
@@ -125,6 +126,7 @@ export function AppRouter() {
         <Route path="announcements" element={<Suspense fallback={<LoadingFallback />}><Announcements /></Suspense>} />
         <Route path="notifications" element={<Suspense fallback={<LoadingFallback />}><Notifications /></Suspense>} />
         <Route path="reports" element={<Suspense fallback={<LoadingFallback />}><Reports /></Suspense>} />
+        <Route path="billing" element={<Suspense fallback={<LoadingFallback />}><Billing /></Suspense>} />
         <Route path="settings" element={<Suspense fallback={<LoadingFallback />}><Settings /></Suspense>} />
       </Route>
 

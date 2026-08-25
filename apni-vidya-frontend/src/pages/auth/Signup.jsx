@@ -72,15 +72,15 @@ export function Signup() {
             <div className="auth-hero-features">
               <div className="auth-hero-feat-item">
                 <span className="auth-hero-feat-bullet">✓</span>
-                <span>Free 14-day full platform access</span>
+                <span>7-Day Free Trial with unlimited batches & students</span>
               </div>
               <div className="auth-hero-feat-item">
                 <span className="auth-hero-feat-bullet">✓</span>
-                <span>No credit card or setup fees required</span>
+                <span>No upfront credit card required</span>
               </div>
               <div className="auth-hero-feat-item">
                 <span className="auth-hero-feat-bullet">✓</span>
-                <span>Instant automated student portals & test engine</span>
+                <span>Pay only ₹80/student per month after trial</span>
               </div>
             </div>
           </div>
@@ -100,18 +100,18 @@ export function Signup() {
             </div>
             <div className="logo-text">Apni Vidya</div>
           </Link>
-          <div className="mobile-auth-tagline">Start your free trial today</div>
+          <div className="mobile-auth-tagline">Start your 7-day free trial today</div>
 
           {/* Form Card */}
           <div className="auth-card-container">
             <div className="auth-card">
               <div className="auth-card-badge">
-                🚀 14-Day Free Access
+                🚀 7-Day Free Trial
               </div>
 
               <div className="auth-card-header">
                 <h2 className="h2">Create institute account</h2>
-                <p className="muted">Register as an Institute Administrator to get started</p>
+                <p className="muted">Get 7 days of unlimited batches & students (₹80/student/mo thereafter)</p>
               </div>
 
               <form onSubmit={handleSubmit} className="auth-form">

@@ -211,4 +211,95 @@ async function sendBatchSubscriptionReceipt({ to, instituteName, batchName, type
   }
 }
 
-module.exports = { sendCredentialsEmail, sendBatchSubscriptionReceipt };
+/**
+ * Send institute monthly subscription payment receipt.
+ * @param {{ to: string, instituteName: string, amount: number, transactionId: string, date: string, studentCount: number, batchCount: number, validUntil: string }} opts
+ */
+async function sendInstituteSubscriptionReceipt({ to, instituteName, amount, transactionId, date, studentCount, batchCount, validUntil }) {
+  const transporter = getTransporter();
+  const subject = `Subscription Activated: ${instituteName} (₹80/student/mo)`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f6fb;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 28px;text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;">🎓 Apni Vidya</div>
+      <div style="color:rgba(255,255,255,0.9);font-size:14px;margin-top:4px;">Monthly Subscription Receipt</div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:32px 28px;">
+      <h2 style="margin:0 0 8px;font-size:20px;color:#1e293b;">Thank you for subscribing, ${instituteName}!</h2>
+      <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0 0 24px;">
+        Your monthly subscription has been successfully activated. You have full, uninterrupted access to all platform features.
+      </p>
+
+      <!-- Receipt Box -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed #e2e8f0; padding-bottom:12px;">
+          <span style="color:#64748b; font-size:14px;">Transaction ID</span>
+          <strong style="color:#1e293b; font-size:14px;">${transactionId}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed #e2e8f0; padding-bottom:12px;">
+          <span style="color:#64748b; font-size:14px;">Payment Date</span>
+          <strong style="color:#1e293b; font-size:14px;">${date}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed #e2e8f0; padding-bottom:12px;">
+          <span style="color:#64748b; font-size:14px;">Plan / Rate</span>
+          <strong style="color:#1e293b; font-size:14px;">₹80 / student / month</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed #e2e8f0; padding-bottom:12px;">
+          <span style="color:#64748b; font-size:14px;">Active Students Billed</span>
+          <strong style="color:#1e293b; font-size:14px;">${studentCount} Students</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed #e2e8f0; padding-bottom:12px;">
+          <span style="color:#64748b; font-size:14px;">Valid Until</span>
+          <strong style="color:#4f46e5; font-size:14px;">${validUntil || '1 Month'}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:16px;">
+          <span style="color:#1e293b; font-size:16px; font-weight:700;">Total Amount Paid</span>
+          <strong style="color:#10b981; font-size:20px;">₹${(amount / 100).toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div style="background:#eff6ff;border-radius:10px;padding:16px 20px;text-align:center;">
+        <p style="margin:0;color:#1e40af;font-size:13px;font-weight:600;">
+          ✨ Unlimited Batches, Unlimited Tests & Evaluation included.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:20px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+      <p style="margin:0;color:#94a3b8;font-size:12px;">
+        Apni Vidya LMS • Automated Billing System
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  if (!transporter) {
+    console.log(`[email-mock] Would send institute subscription receipt to ${to} for transaction ${transactionId}`);
+    return { accepted: [to], mock: true };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Apni Vidya Billing" <${process.env.SMTP_EMAIL}>`,
+      to,
+      subject,
+      html,
+    });
+    return info;
+  } catch (err) {
+    console.error(`[email] Failed to send institute receipt to ${to}:`, err.message);
+  }
+}
+
+module.exports = { sendCredentialsEmail, sendBatchSubscriptionReceipt, sendInstituteSubscriptionReceipt };
+
