@@ -145,12 +145,14 @@ export function AppRouter() {
 
       <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Suspense fallback={<LoadingFallback />}><StudentPortal /></Suspense>} />
+        <Route path="live-classes" element={<Suspense fallback={<LoadingFallback />}><LiveClasses /></Suspense>} />
         <Route path="settings" element={<Suspense fallback={<LoadingFallback />}><Settings /></Suspense>} />
         <Route path=":view" element={<Suspense fallback={<LoadingFallback />}><StudentPortal /></Suspense>} />
       </Route>
 
       <Route path="/parent" element={<ProtectedRoute allowedRoles={['parent']}><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Suspense fallback={<LoadingFallback />}><ParentPortal /></Suspense>} />
+        <Route path="live-classes" element={<Suspense fallback={<LoadingFallback />}><LiveClasses /></Suspense>} />
         <Route path="settings" element={<Suspense fallback={<LoadingFallback />}><Settings /></Suspense>} />
         <Route path=":view" element={<Suspense fallback={<LoadingFallback />}><ParentPortal /></Suspense>} />
       </Route>

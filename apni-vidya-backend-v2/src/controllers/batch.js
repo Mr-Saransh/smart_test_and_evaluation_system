@@ -35,6 +35,97 @@ async function create(req, res, next) {
   }
 }
 
+async function listMine(req, res, next) {
+  try {
+    const { getStudentForUser, getStudentsForParent } = require('../utils/access');
+
+    if (req.user.role === 'student') {
+      const student = await getStudentForUser(req.user.id);
+      if (!student || !student.batch_id) {
+        return res.json([]);
+      }
+
+      const result = await db.query(
+        `SELECT b.*, 
+                i.name as institute_name,
+                (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+         FROM batches b
+         JOIN institutes i ON b.institute_id = i.id
+         WHERE b.id = $1 AND b.is_active = true`,
+        [student.batch_id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.json([]);
+      }
+
+      // Attach today's timetable slots for this batch if any
+      const todayIdx = ((new Date().getDay() + 6) % 7); // Monday = 0, Sunday = 6
+      const slots = await db.query(
+        `SELECT ts.*, u.full_name as teacher_name
+         FROM timetable_slots ts
+         LEFT JOIN teachers t ON ts.teacher_id = t.id
+         LEFT JOIN users u ON t.user_id = u.id
+         WHERE ts.batch_id = $1 AND ts.day_of_week = $2
+         ORDER BY ts.start_time ASC`,
+        [student.batch_id, todayIdx]
+      );
+
+      const batchesWithSlots = result.rows.map(batch => ({
+        ...batch,
+        today_slots: slots.rows || []
+      }));
+
+      return res.json(batchesWithSlots);
+    } else if (req.user.role === 'parent') {
+      const kids = await getStudentsForParent(req.user.id);
+      if (!kids || kids.length === 0) return res.json([]);
+
+      const batchIds = kids.map(k => k.batch_id).filter(Boolean);
+      if (batchIds.length === 0) return res.json([]);
+
+      const result = await db.query(
+        `SELECT b.*, 
+                i.name as institute_name,
+                (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+         FROM batches b
+         JOIN institutes i ON b.institute_id = i.id
+         WHERE b.id = ANY($1::uuid[]) AND b.is_active = true`,
+        [batchIds]
+      );
+      return res.json(result.rows);
+    } else if (req.user.role === 'teacher') {
+      const t = await db.query('SELECT institute_id FROM teachers WHERE user_id = $1', [req.user.id]);
+      if (t.rows.length === 0) return res.json([]);
+      const instId = t.rows[0].institute_id;
+      const result = await db.query(
+        `SELECT b.*, (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+         FROM batches b
+         WHERE b.institute_id = $1 AND b.is_active = true
+         ORDER BY b.created_at DESC`,
+        [instId]
+      );
+      return res.json(result.rows);
+    } else if (req.user.role === 'institute_admin') {
+      const inst = await db.query('SELECT id FROM institutes WHERE admin_id = $1', [req.user.id]);
+      if (inst.rows.length === 0) return res.json([]);
+      const instId = inst.rows[0].id;
+      const result = await db.query(
+        `SELECT b.*, (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+         FROM batches b
+         WHERE b.institute_id = $1 AND b.is_active = true
+         ORDER BY b.created_at DESC`,
+        [instId]
+      );
+      return res.json(result.rows);
+    }
+
+    res.json([]);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function list(req, res, next) {
   try {
     const { institute_id } = req.params;
@@ -469,4 +560,4 @@ async function verifySubscription(req, res, next) {
   }
 }
 
-module.exports = { create, list, listAll, update, remove, permanentRemove, getDetails, updateMeetLink, createSubscriptionOrder, verifySubscription };
+module.exports = { create, list, listMine, listAll, update, remove, permanentRemove, getDetails, updateMeetLink, createSubscriptionOrder, verifySubscription };

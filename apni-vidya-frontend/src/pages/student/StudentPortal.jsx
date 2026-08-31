@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { GET, POST, PUT, toast } from '../../utils/api';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CalendarIcon, FileTextIcon, BookOpenIcon, ClockIcon, CurrencyIcon, MegaphoneIcon, CheckCircleIcon, UsersIcon, UserCheckIcon, TrophyIcon } from '../../components/common/Icons';
+import { CalendarIcon, FileTextIcon, BookOpenIcon, ClockIcon, CurrencyIcon, MegaphoneIcon, CheckCircleIcon, UsersIcon, UserCheckIcon, TrophyIcon, VideoIcon } from '../../components/common/Icons';
 import { SkeletonTable, SkeletonCard } from '../../components/common/Skeleton';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LeaderboardView } from '../../components/common/LeaderboardView';
+import { LiveClasses } from '../shared/LiveClasses';
 import { formatCurrency, formatDate, getScoreColor, getAttendanceColor, formatTime, getMondayBasedDayIndex } from '../../utils/helpers';
 import { TT_DAYS, STATUS_CONFIG, getSubjectColor } from '../../utils/constants';
 
@@ -46,7 +47,8 @@ export function StudentPortal() {
       GET(`/fees/mine`).catch(() => []),
       GET(`/students/me`).catch(() => null),
       GET(`/leaderboard/mine`).catch(() => []),
-    ]).then(([portfolio, timetableRes, planner, materials, tests, announcements, fees, profile, leaderboard]) => {
+      GET(`/batches/mine`).catch(() => []),
+    ]).then(([portfolio, timetableRes, planner, materials, tests, announcements, fees, profile, leaderboard, batches]) => {
       setData({
         portfolio,
         timetable: timetableRes.flat || timetableRes || [],
@@ -56,7 +58,8 @@ export function StudentPortal() {
         announcements: announcements || [],
         fees: fees || [],
         leaderboard: leaderboard || [],
-        profile
+        profile,
+        batches: batches || []
       });
       if (profile) {
         setProfileForm({
@@ -758,8 +761,13 @@ export function StudentPortal() {
     </div>
   );
 
+  const renderLiveClasses = () => (
+    <LiveClasses embedded={true} />
+  );
+
   const views = {
     home: renderHome,
+    'live-classes': renderLiveClasses,
     timetable: renderTimetable,
     tests: renderTests,
     materials: renderMaterials,
@@ -773,7 +781,7 @@ export function StudentPortal() {
   };
 
   const viewNames = {
-    home: 'Dashboard', timetable: 'Timetable', tests: 'Tests & Assessments', 
+    home: 'Dashboard', 'live-classes': 'Live Classes', timetable: 'Timetable', tests: 'Tests & Assessments', 
     materials: 'Study Materials', fees: 'Fee Status', announcements: 'Announcements',
     planner: 'Study Planner', attendance: 'Attendance Record', progress: 'My Progress',
     profile: 'My Profile', leaderboard: 'Batch Leaderboard'

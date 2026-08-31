@@ -95,16 +95,36 @@ async function login(req, res, next) {
 
     const token = generateToken(user);
 
+    const userPayload = {
+      id: user.id,
+      phone: user.phone,
+      email: user.email,
+      role: user.role,
+      full_name: user.full_name,
+      must_reset_password: Boolean(user.must_reset_password),
+      profile_completed: Boolean(user.profile_completed),
+    };
+
+    if (user.role === 'student') {
+      const s = await db.query('SELECT institute_id, batch_id FROM students WHERE user_id = $1', [user.id]);
+      if (s.rows.length > 0) {
+        userPayload.institute_id = s.rows[0].institute_id;
+        userPayload.batch_id = s.rows[0].batch_id;
+      }
+    } else if (user.role === 'teacher') {
+      const t = await db.query('SELECT institute_id FROM teachers WHERE user_id = $1', [user.id]);
+      if (t.rows.length > 0) {
+        userPayload.institute_id = t.rows[0].institute_id;
+      }
+    } else if (user.role === 'parent') {
+      const p = await db.query('SELECT institute_id FROM students WHERE parent_user_id = $1 LIMIT 1', [user.id]);
+      if (p.rows.length > 0) {
+        userPayload.institute_id = p.rows[0].institute_id;
+      }
+    }
+
     res.json({
-      user: {
-        id: user.id,
-        phone: user.phone,
-        email: user.email,
-        role: user.role,
-        full_name: user.full_name,
-        must_reset_password: Boolean(user.must_reset_password),
-        profile_completed: Boolean(user.profile_completed),
-      },
+      user: userPayload,
       token,
     });
   } catch (err) {
