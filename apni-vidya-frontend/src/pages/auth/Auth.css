@@ -529,3 +529,114 @@
     margin-bottom: 4px;
   }
 }
+
+/* ─── Admin Quick Access Card ─── */
+.admin-quick-card {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(245, 243, 255, 0.95) 0%, rgba(238, 242, 255, 0.95) 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px -2px rgba(79, 70, 229, 0.12);
+  transition: all 0.25s ease;
+}
+
+.admin-quick-card:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 6px 20px -2px rgba(79, 70, 229, 0.18);
+}
+
+.admin-quick-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-badge-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  flex-shrink: 0;
+}
+
+.admin-quick-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e1b4b;
+  letter-spacing: -0.01em;
+}
+
+.admin-quick-creds {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.cred-code {
+  background: #ede9fe;
+  color: #4338ca;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  border: 1px solid #c7d2fe;
+}
+
+.admin-quick-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-admin-instant {
+  flex: 1.4;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-admin-instant:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(99, 102, 241, 0.45);
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+}
+
+.btn-admin-fill {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-admin-fill:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+

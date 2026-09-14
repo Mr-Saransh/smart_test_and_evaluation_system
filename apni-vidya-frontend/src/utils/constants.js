@@ -27,7 +27,7 @@ export const ROLE_LABELS = {
 
 /* ─── Route Prefixes ─── */
 export const ROLE_HOME = {
-  [ROLES.SUPER_ADMIN]: '/super-admin',
+  [ROLES.SUPER_ADMIN]: '/superadmin',
   [ROLES.INSTITUTE_ADMIN]: '/admin',
   [ROLES.TEACHER]: '/teacher',
   [ROLES.STUDENT]: '/student',
@@ -39,11 +39,8 @@ export const ROLE_HOME = {
    Use flatNavItems(role) to get a flat array for any role. */
 export const NAV_ITEMS = {
   [ROLES.SUPER_ADMIN]: [
-    { id: 'overview', label: 'Platform Dashboard', path: '/super-admin', icon: HomeIcon },
-    { id: 'institutes', label: 'Institutes', path: '/super-admin/institutes', icon: BuildingIcon },
-    { id: 'users', label: 'User Management', path: '/super-admin/users', icon: UsersIcon },
-    { id: 'analytics', label: 'Analytics', path: '/super-admin/analytics', icon: TrendingUpIcon },
-    { id: 'settings', label: 'Platform Settings', path: '/super-admin/settings', icon: SettingsIcon },
+    { id: 'overview', label: 'User Monitor', path: '/superadmin', icon: UsersIcon },
+    { id: 'institutes', label: 'Institutes', path: '/superadmin/institutes', icon: BuildingIcon },
   ],
 
   [ROLES.INSTITUTE_ADMIN]: [

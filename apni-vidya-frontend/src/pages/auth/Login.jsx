@@ -17,6 +17,14 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === 'admin' || params.get('portal') === 'admin') {
+      setIdentifier('admin');
+      setPassword('admin123');
+    }
+  }, [location.search]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!identifier || !password) {

@@ -10,5 +10,6 @@ router.get('/institutes', superadmin.listInstitutes);
 router.put('/institutes/:id/status', superadmin.toggleInstitute);
 router.put('/institutes/:id/subscription', superadmin.updateInstituteSubscription);
 router.get('/users', superadmin.listUsers);
+router.put('/users/:id/status', superadmin.toggleUserStatus);
 
 module.exports = router;

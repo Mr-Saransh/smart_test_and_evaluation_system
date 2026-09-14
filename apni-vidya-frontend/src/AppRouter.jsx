@@ -13,6 +13,7 @@ import { Portfolio } from './pages/public/Portfolio';
 
 // Auth Pages
 import { Login } from './pages/auth/Login';
+import { AdminLogin } from './pages/auth/AdminLogin';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ResetPassword } from './pages/auth/ResetPassword';
@@ -90,6 +91,9 @@ export function AppRouter() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/login-admin" element={<AdminLogin />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin-portal" element={<AdminLogin />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
@@ -159,9 +163,11 @@ export function AppRouter() {
 
       <Route path="/superadmin" element={<ProtectedRoute allowedRoles={['super_admin']}><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Suspense fallback={<LoadingFallback />}><SuperAdminOverview /></Suspense>} />
+        <Route path="users" element={<Suspense fallback={<LoadingFallback />}><SuperAdminOverview /></Suspense>} />
         <Route path="institutes" element={<Suspense fallback={<LoadingFallback />}><SuperAdminInstitutes /></Suspense>} />
         <Route path="*" element={<Navigate to="/superadmin" replace />} />
       </Route>
+      <Route path="/super-admin/*" element={<Navigate to="/superadmin" replace />} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
