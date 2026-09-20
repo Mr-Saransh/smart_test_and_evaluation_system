@@ -421,8 +421,165 @@ async function adminDashboard(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function teacherDashboard(req, res, next) {
+  try {
+    let { institute_id } = req.params;
+    const { hasInstituteAccess } = require('../utils/access');
+
+    // Find teacher record for this user
+    const tRes = await db.query(
+      'SELECT id, institute_id, subject FROM teachers WHERE user_id = $1',
+      [req.user.id]
+    );
+    if (tRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Teacher profile not found' });
+    }
+    const teacher = tRes.rows[0];
+    const teacherId = teacher.id;
+    const instId = institute_id || teacher.institute_id;
+
+    if (!(await hasInstituteAccess(req.user, instId))) {
+      return res.status(403).json({ error: 'Not authorized for this institute' });
+    }
+
+    // 1. Batches assigned to this teacher (either directly on batches.teacher_id or via timetable_slots)
+    const batchesRes = await db.query(
+      `SELECT DISTINCT b.id, b.name, b.description, b.meet_link, b.capacity,
+              (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+       FROM batches b
+       LEFT JOIN timetable_slots ts ON ts.batch_id = b.id AND ts.teacher_id = $1
+       WHERE b.institute_id = $2 
+         AND b.is_active = true
+         AND (b.teacher_id = $1 OR ts.teacher_id = $1)
+       ORDER BY b.name ASC`,
+      [teacherId, instId]
+    );
+    const myBatches = batchesRes.rows;
+    const batchIds = myBatches.map(b => b.id);
+
+    // 2. Accurate count of unique students belonging to teacher's batches
+    let myStudentsCount = 0;
+    if (batchIds.length > 0) {
+      const studentsRes = await db.query(
+        `SELECT COUNT(DISTINCT s.id) as count 
+         FROM students s
+         WHERE s.batch_id = ANY($1::uuid[]) AND s.institute_id = $2`,
+        [batchIds, instId]
+      );
+      myStudentsCount = Number(studentsRes.rows[0]?.count || 0);
+    }
+
+    // 3. Today's classes for the teacher (from timetable_slots)
+    const todayIdx = ((new Date().getDay() + 6) % 7); // Monday = 0 ... Sunday = 6
+    const todaySlotsRes = await db.query(
+      `SELECT ts.*, b.name as batch_name, b.meet_link,
+              (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count,
+              (SELECT COUNT(*) FROM attendance a WHERE a.batch_id = b.id AND a.date = CURRENT_DATE) as attendance_marked_count
+       FROM timetable_slots ts
+       JOIN batches b ON ts.batch_id = b.id
+       WHERE ts.teacher_id = $1 
+         AND ts.institute_id = $2
+         AND ts.day_of_week = $3
+       ORDER BY ts.start_time ASC`,
+      [teacherId, instId, todayIdx]
+    );
+    const todayClasses = todaySlotsRes.rows;
+
+    // 4. Today's attendance percentage across teacher's batches
+    let attendancePct = 0;
+    if (batchIds.length > 0) {
+      const attendRes = await db.query(
+        `SELECT 
+           COUNT(*) FILTER (WHERE status IN ('present', 'late')) * 100.0 / NULLIF(COUNT(*), 0) as pct
+         FROM attendance 
+         WHERE batch_id = ANY($1::uuid[]) AND date = CURRENT_DATE`,
+        [batchIds]
+      );
+      attendancePct = Math.round(Number(attendRes.rows[0]?.pct) || 0);
+    }
+
+    // 5. Active & Recent Tests for teacher's batches
+    let upcomingTests = [];
+    let activeTestsCount = 0;
+    let avgPerformance = 0;
+    if (batchIds.length > 0) {
+      const testsRes = await db.query(
+        `SELECT t.id, t.title, t.subject, t.duration_min, t.status,
+                COALESCE(t.start_date, t.scheduled_at, t.created_at) as start_time,
+                b.name as batch_name,
+                (SELECT COUNT(*) FROM test_submissions ts WHERE ts.test_id = t.id) as submissions_count
+         FROM tests t
+         JOIN batches b ON t.batch_id = b.id
+         WHERE t.batch_id = ANY($1::uuid[])
+         ORDER BY t.created_at DESC LIMIT 5`,
+        [batchIds]
+      );
+      upcomingTests = testsRes.rows;
+      activeTestsCount = testsRes.rows.filter(t => t.status === 'active').length;
+
+      const perfRes = await db.query(
+        `SELECT ROUND(AVG(100.0 * ts.score / NULLIF(ts.max_marks, 0)), 1) as avg_score
+         FROM test_submissions ts
+         JOIN tests t ON ts.test_id = t.id
+         WHERE t.batch_id = ANY($1::uuid[])`,
+        [batchIds]
+      );
+      avgPerformance = Math.round(Number(perfRes.rows[0]?.avg_score) || 0);
+    }
+
+    // 6. Alerts: low attendance students (<75% in last 7 days)
+    let lowAttendanceCount = 0;
+    if (batchIds.length > 0) {
+      const lowAttendRes = await db.query(
+        `SELECT COUNT(DISTINCT student_id) as count
+         FROM attendance
+         WHERE batch_id = ANY($1::uuid[])
+           AND date >= CURRENT_DATE - INTERVAL '7 days'
+           AND status = 'absent'`,
+        [batchIds]
+      );
+      lowAttendanceCount = Number(lowAttendRes.rows[0]?.count || 0);
+    }
+
+    // 7. Recent Announcements
+    const announcementsRes = await db.query(
+      `SELECT id, title, body as content, audience as type, created_at
+       FROM announcements 
+       WHERE institute_id = $1 AND (audience IN ('all', 'teachers', 'faculty') OR audience IS NULL)
+       ORDER BY created_at DESC LIMIT 5`,
+      [instId]
+    );
+
+    res.json({
+      teacher: {
+        id: teacher.id,
+        full_name: req.user.full_name,
+        email: req.user.email,
+        phone: req.user.phone,
+        subject: teacher.subject,
+      },
+      metrics: {
+        my_batches: myBatches.length,
+        my_students: myStudentsCount,
+        todays_classes: todayClasses.length,
+        attendance_pct: attendancePct,
+        active_tests: activeTestsCount,
+        avg_performance: avgPerformance,
+      },
+      alerts: {
+        low_attendance_students: lowAttendanceCount,
+        unmarked_classes: todayClasses.filter(c => Number(c.attendance_marked_count) === 0).length,
+      },
+      today_classes: todayClasses,
+      my_batches: myBatches,
+      recent_tests: upcomingTests,
+      announcements: announcementsRes.rows,
+    });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
-  studentDashboard, parentDashboard, studentReport, batchReport, enablePortfolio, publicPortfolio, weeklyReport, adminDashboard,
+  studentDashboard, parentDashboard, studentReport, batchReport, enablePortfolio, publicPortfolio, weeklyReport, adminDashboard, teacherDashboard,
   // Exposed so the scheduled-report dispatcher can reuse the same compiler the
   // dashboards use; keeps the "auto-compiled from attendance + test data"
   // contract in one place.

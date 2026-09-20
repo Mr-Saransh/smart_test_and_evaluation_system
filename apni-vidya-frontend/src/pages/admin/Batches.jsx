@@ -17,7 +17,8 @@ export function Batches() {
   
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', start_date: '', end_date: '', meet_link: '', capacity: '' });
+  const [form, setForm] = useState({ name: '', description: '', start_date: '', end_date: '', meet_link: '', capacity: '', teacher_id: '' });
+  const [teachers, setTeachers] = useState([]);
   const [saving, setSaving] = useState(false);
 
   // Delete Modal state
@@ -44,6 +45,7 @@ export function Batches() {
   const load = () => {
     if (!institute) return;
     GET(`/batches/all/${institute.id}`).then(setItems).catch(() => {}).finally(() => setLoading(false));
+    GET(`/teachers/${institute.id}`).then(setTeachers).catch(() => []);
   };
   useEffect(load, [institute]);
 
@@ -71,8 +73,8 @@ export function Batches() {
   };
 
   const setF = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
-  const openCreate = () => { setEditing(null); setForm({ name: '', description: '', start_date: '', end_date: '', meet_link: '', capacity: 100 }); setShow(true); };
-  const openEdit = (b, e) => { e.stopPropagation(); setEditing(b); setForm({ name: b.name, description: b.description || '', start_date: b.start_date?.split('T')[0] || '', end_date: b.end_date?.split('T')[0] || '', meet_link: b.meet_link || '', capacity: b.capacity || '' }); setShow(true); };
+  const openCreate = () => { setEditing(null); setForm({ name: '', description: '', start_date: '', end_date: '', meet_link: '', capacity: 100, teacher_id: '' }); setShow(true); };
+  const openEdit = (b, e) => { e.stopPropagation(); setEditing(b); setForm({ name: b.name, description: b.description || '', start_date: b.start_date?.split('T')[0] || '', end_date: b.end_date?.split('T')[0] || '', meet_link: b.meet_link || '', capacity: b.capacity || '', teacher_id: b.teacher_id || '' }); setShow(true); };
 
   const save = async () => {
     if (!form.name) { toast('Batch name is required'); return; }
@@ -459,9 +461,20 @@ export function Batches() {
                         </h3>
                       </div>
                       
-                      {details.teachers?.length > 0 ? (
+                      {details.teachers?.length > 0 || details.assigned_teacher_name ? (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                          {details.teachers.map((t, i) => (
+                          {details.assigned_teacher_name && (
+                            <div className="fx" style={{ padding: '10px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 12, border: '1px solid var(--color-primary-light, #c7d2fe)', gap: 12 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
+                                {details.assigned_teacher_name.charAt(0)}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-primary)' }}>{details.assigned_teacher_name} <span style={{ fontSize: 11, fontWeight: 500, background: 'var(--color-primary-light, #e0e7ff)', color: 'var(--color-primary, #4338ca)', padding: '2px 6px', borderRadius: 4, marginLeft: 4 }}>Primary</span></div>
+                                <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 }}>{details.assigned_teacher_subject || 'Faculty'}</div>
+                              </div>
+                            </div>
+                          )}
+                          {(details.teachers || []).filter(t => t.full_name !== details.assigned_teacher_name).map((t, i) => (
                             <div key={i} className="fx" style={{ padding: '10px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 12, border: '1px solid var(--border-light)', gap: 12 }}>
                               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), #a855f7)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
                                 {t.full_name.charAt(0)}
@@ -476,7 +489,7 @@ export function Batches() {
                       ) : (
                         <div style={{ padding: 32, textAlign: 'center', background: 'var(--bg-surface-elevated)', borderRadius: 12, border: '1px dashed var(--border-color)' }}>
                           <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>👨‍🏫</span>
-                          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>No teachers assigned to timetable.</span>
+                          <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>No teachers assigned yet. Edit this batch to assign a primary teacher or add slots in Timetable.</span>
                         </div>
                       )}
                     </div>
@@ -573,6 +586,20 @@ export function Batches() {
           <div className="field">
             <label>Google Meet Link</label>
             <input className="inp" value={form.meet_link} onChange={setF('meet_link')} placeholder="https://meet.google.com/..." />
+          </div>
+        </div>
+        <div className="field">
+          <label>Assigned Faculty / Teacher</label>
+          <select className="inp" value={form.teacher_id} onChange={setF('teacher_id')}>
+            <option value="">-- Select Teacher (Optional) --</option>
+            {teachers.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.full_name} ({t.subject || 'General'})
+              </option>
+            ))}
+          </select>
+          <div className="field-hint" style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>
+            Assigning a teacher links this batch and its students directly to their Teacher Dashboard.
           </div>
         </div>
       </Modal>

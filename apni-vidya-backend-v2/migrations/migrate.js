@@ -22,6 +22,7 @@ const migrations = [
   require('./014_batch_deferred_capacity.js'),
   require('./015_test_engine_enhancements.js'),
   require('./016_institute_trials_and_subscriptions.js'),
+  require('./017_batch_teacher_id.js'),
 ];
 
 async function migrate() {

@@ -20,19 +20,39 @@ async function list(req, res, next) {
     if (!(await hasInstituteAccess(req.user, institute_id))) {
       return res.status(403).json({ error: 'Not authorized for this institute' });
     }
+
+    let teacherId = null;
+    if (req.user.role === 'teacher') {
+      const tRes = await db.query('SELECT id FROM teachers WHERE user_id = $1', [req.user.id]);
+      if (tRes.rows.length > 0) teacherId = tRes.rows[0].id;
+    }
+
+    const { my_only } = req.query;
+    let filterMyOnlySql = '';
+    if (my_only === 'true' && teacherId) {
+      filterMyOnlySql = `AND (b.teacher_id = $2 OR EXISTS (
+        SELECT 1 FROM timetable_slots ts WHERE ts.batch_id = s.batch_id AND ts.teacher_id = $2
+      ))`;
+    }
+
     const result = await db.query(
       `SELECT s.id, s.batch_id, s.roll_number, s.address, s.date_of_birth, s.created_at,
               u.id AS user_id, u.full_name, u.phone, u.email, u.is_active,
               u.profile_completed,
               b.name AS batch_name,
-              p.full_name AS parent_name, p.phone AS parent_phone
+              p.full_name AS parent_name, p.phone AS parent_phone,
+              CASE WHEN $2::uuid IS NOT NULL AND (
+                b.teacher_id = $2 OR EXISTS (
+                  SELECT 1 FROM timetable_slots ts WHERE ts.batch_id = s.batch_id AND ts.teacher_id = $2
+                )
+              ) THEN true ELSE false END AS is_my_student
        FROM students s
        JOIN users u ON s.user_id = u.id
        LEFT JOIN batches b ON s.batch_id = b.id
        LEFT JOIN users p ON s.parent_user_id = p.id
-       WHERE s.institute_id = $1
+       WHERE s.institute_id = $1 ${filterMyOnlySql}
        ORDER BY u.full_name`,
-      [institute_id]
+      [institute_id, teacherId]
     );
     res.json(result.rows);
   } catch (err) {

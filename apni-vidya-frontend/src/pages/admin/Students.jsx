@@ -11,12 +11,14 @@ import { StudentReportCardModal } from '../../components/dashboard/StudentReport
 import * as XLSX from 'xlsx';
 
 export function Students() {
-  const { institute } = useAuth();
+  const { institute, user } = useAuth();
+  const isTeacher = user?.role === 'teacher';
   const [items, setItems] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
+  const [teacherOnlyFilter, setTeacherOnlyFilter] = useState(isTeacher);
   const debouncedSearch = useDebounce(search, 300);
 
   // Admission modal state
@@ -47,9 +49,10 @@ export function Students() {
 
   const load = () => {
     if (!institute) return;
+    const batchUrl = isTeacher ? '/batches/mine' : `/batches/${institute.id}`;
     Promise.all([
       GET(`/students/${institute.id}`),
-      GET(`/batches/${institute.id}`)
+      GET(batchUrl)
     ]).then(([s, b]) => { setItems(s); setBatches(b); })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -77,9 +80,10 @@ export function Students() {
         s.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         s.roll_number?.toLowerCase().includes(debouncedSearch.toLowerCase());
       const matchBatch = !batchFilter || s.batch_id === batchFilter;
-      return matchSearch && matchBatch;
+      const matchTeacherOnly = !isTeacher || !teacherOnlyFilter || s.is_my_student;
+      return matchSearch && matchBatch && matchTeacherOnly;
     });
-  }, [items, debouncedSearch, batchFilter]);
+  }, [items, debouncedSearch, batchFilter, isTeacher, teacherOnlyFilter]);
 
   // ─── Admission Handlers ───
   const openAdmission = (mode) => {
@@ -239,14 +243,36 @@ export function Students() {
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {/* Toolbar */}
           <div className="fxb" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', flexWrap: 'wrap', gap: 12, background: 'var(--bg-tertiary)' }}>
-            <div className="search-bar" style={{ width: 300, background: 'var(--bg-primary)' }}>
-              <SearchIcon size={16} color="var(--text-tertiary)" />
-              <input className="search-inp" placeholder="Search by name, email, phone..." value={search} onChange={e => setSearch(e.target.value)} />
+            <div className="fx" style={{ gap: 12, flexWrap: 'wrap', flex: '1 1 auto' }}>
+              <div className="search-bar" style={{ width: 280, background: 'var(--bg-primary)' }}>
+                <SearchIcon size={16} color="var(--text-tertiary)" />
+                <input className="search-inp" placeholder="Search by name, email, phone..." value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <select className="sel" value={batchFilter} onChange={e => setBatchFilter(e.target.value)} style={{ minWidth: 180 }}>
+                <option value="">All Batches</option>
+                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
             </div>
-            <select className="sel" value={batchFilter} onChange={e => setBatchFilter(e.target.value)} style={{ minWidth: 200 }}>
-              <option value="">All Batches</option>
-              {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            {isTeacher && (
+              <div className="fx" style={{ gap: 4, background: 'var(--bg-primary)', padding: '3px 4px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <button
+                  type="button"
+                  className={`btn bsm ${teacherOnlyFilter ? 'bp' : 'bs'}`}
+                  style={{ padding: '5px 12px', fontSize: 12, borderRadius: 6 }}
+                  onClick={() => setTeacherOnlyFilter(true)}
+                >
+                  My Students ({items.filter(s => s.is_my_student).length})
+                </button>
+                <button
+                  type="button"
+                  className={`btn bsm ${!teacherOnlyFilter ? 'bp' : 'bs'}`}
+                  style={{ padding: '5px 12px', fontSize: 12, borderRadius: 6 }}
+                  onClick={() => setTeacherOnlyFilter(false)}
+                >
+                  All Institute ({items.length})
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Data Grid */}
@@ -254,7 +280,17 @@ export function Students() {
             {loading ? (
               <div style={{ padding: 20 }}><SkeletonTable rows={8} /></div>
             ) : filtered.length === 0 ? (
-              <EmptyState icon={UsersIcon} title="No Students Found" description="Try adjusting your filters or admit new students." />
+              isTeacher && teacherOnlyFilter && items.filter(s => s.is_my_student).length === 0 ? (
+                <EmptyState 
+                  icon={UsersIcon} 
+                  title="No Students in Your Batches" 
+                  description="You have not been assigned to any batches with enrolled students yet. Ask your institute administrator to assign you to a batch in Timetable or Batches." 
+                  actionLabel="View All Institute Students" 
+                  onAction={() => setTeacherOnlyFilter(false)} 
+                />
+              ) : (
+                <EmptyState icon={UsersIcon} title="No Students Found" description="Try adjusting your filters or admit new students." />
+              )
             ) : (
               <table className="data-grid">
                 <thead>
@@ -277,7 +313,12 @@ export function Students() {
                             {getInitials(s.full_name)}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.full_name}</div>
+                            <div className="fx" style={{ gap: 6, alignItems: 'center' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.full_name}</span>
+                              {isTeacher && s.is_my_student && (
+                                <span className="badge" style={{ background: '#e0e7ff', color: '#4338ca', fontSize: 10, padding: '1px 6px' }}>My Batch</span>
+                              )}
+                            </div>
                             {s.email && <div className="muted" style={{ fontSize: 12 }}>{s.email}</div>}
                           </div>
                         </div>

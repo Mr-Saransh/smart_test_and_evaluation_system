@@ -4,7 +4,7 @@ const { sendBatchSubscriptionReceipt } = require('../services/email');
 
 async function create(req, res, next) {
   try {
-    const { institute_id, name, description, start_date, end_date, meet_link, capacity } = req.body;
+    const { institute_id, name, description, start_date, end_date, meet_link, capacity, teacher_id } = req.body;
 
     if (!institute_id || !name) {
       return res.status(400).json({ error: 'institute_id and name are required' });
@@ -20,12 +20,12 @@ async function create(req, res, next) {
     }
 
     const result = await db.query(
-      `INSERT INTO batches (institute_id, name, description, start_date, end_date, meet_link, capacity, payment_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
+      `INSERT INTO batches (institute_id, name, description, start_date, end_date, meet_link, capacity, payment_status, teacher_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8)
        RETURNING *`,
       [
         institute_id, name, description || null, start_date || null, end_date || null, meet_link || null, 
-        capacity || null
+        capacity || null, teacher_id || null
       ]
     );
 
@@ -95,15 +95,22 @@ async function listMine(req, res, next) {
       );
       return res.json(result.rows);
     } else if (req.user.role === 'teacher') {
-      const t = await db.query('SELECT institute_id FROM teachers WHERE user_id = $1', [req.user.id]);
+      const t = await db.query('SELECT id, institute_id FROM teachers WHERE user_id = $1', [req.user.id]);
       if (t.rows.length === 0) return res.json([]);
+      const teacherId = t.rows[0].id;
       const instId = t.rows[0].institute_id;
       const result = await db.query(
-        `SELECT b.*, (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+        `SELECT DISTINCT b.*, 
+                (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count,
+                u.full_name as assigned_teacher_name
          FROM batches b
-         WHERE b.institute_id = $1 AND b.is_active = true
+         LEFT JOIN timetable_slots ts ON ts.batch_id = b.id AND ts.teacher_id = $1
+         LEFT JOIN teachers t2 ON b.teacher_id = t2.id
+         LEFT JOIN users u ON t2.user_id = u.id
+         WHERE b.institute_id = $2 AND b.is_active = true
+           AND (b.teacher_id = $1 OR ts.teacher_id = $1)
          ORDER BY b.created_at DESC`,
-        [instId]
+        [teacherId, instId]
       );
       return res.json(result.rows);
     } else if (req.user.role === 'institute_admin') {
@@ -136,8 +143,11 @@ async function list(req, res, next) {
 
     const result = await db.query(
       `SELECT b.*, 
-              (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count
+              (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) as student_count,
+              u.full_name as assigned_teacher_name
        FROM batches b
+       LEFT JOIN teachers t ON b.teacher_id = t.id
+       LEFT JOIN users u ON t.user_id = u.id
        WHERE b.institute_id = $1 AND b.is_active = true
        ORDER BY b.created_at DESC`,
       [institute_id]
@@ -177,6 +187,7 @@ async function update(req, res, next) {
     const newEndDate = end_date !== undefined ? (end_date ? end_date : null) : current.end_date;
     const newIsActive = is_active !== undefined && is_active !== null ? Boolean(is_active) : current.is_active;
     const newMeetLink = meet_link !== undefined ? (meet_link ? meet_link.trim() : null) : current.meet_link;
+    const newTeacherId = teacher_id !== undefined ? (teacher_id || null) : current.teacher_id;
 
     const result = await db.query(
       `UPDATE batches 
@@ -186,10 +197,11 @@ async function update(req, res, next) {
            end_date = $4,
            is_active = $5,
            meet_link = $6,
+           teacher_id = $7,
            updated_at = now()
-       WHERE id = $7
+       WHERE id = $8
        RETURNING *`,
-      [newName, newDescription, newStartDate, newEndDate, newIsActive, newMeetLink, id]
+      [newName, newDescription, newStartDate, newEndDate, newIsActive, newMeetLink, newTeacherId, id]
     );
 
     res.json(result.rows[0]);
@@ -281,8 +293,13 @@ async function getDetails(req, res, next) {
     const { id } = req.params;
     const batch = await db.query(
       `SELECT b.*, 
-              (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) AS student_count
-       FROM batches b WHERE b.id = $1`,
+              (SELECT COUNT(*) FROM students s WHERE s.batch_id = b.id) AS student_count,
+              u.full_name AS assigned_teacher_name,
+              t.subject AS assigned_teacher_subject
+       FROM batches b 
+       LEFT JOIN teachers t ON b.teacher_id = t.id
+       LEFT JOIN users u ON t.user_id = u.id
+       WHERE b.id = $1`,
       [id]
     );
     if (batch.rows.length === 0) return res.status(404).json({ error: 'Batch not found' });

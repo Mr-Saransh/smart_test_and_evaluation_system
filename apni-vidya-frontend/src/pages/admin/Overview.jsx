@@ -14,10 +14,7 @@ export function Overview() {
   const navigate = useNavigate();
   
   // Teacher State
-  const [batches, setBatches] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [enrollments, setEnrollments] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
+  const [teacherData, setTeacherData] = useState(null);
   
   // Admin State
   const [adminData, setAdminData] = useState(null);
@@ -32,14 +29,12 @@ export function Overview() {
     setLoading(true);
 
     if (isTeacher) {
-      Promise.all([
-        GET(`/batches/${institute.id}`).catch(() => []),
-        GET(`/courses/${institute.id}`).catch(() => []),
-        GET(`/enrollment/requests/${institute.id}`).catch(() => []),
-        GET(`/announcements/institute/${institute.id}`).catch(() => []),
-      ]).then(([b, c, e, a]) => {
-        setBatches(b); setCourses(c); setEnrollments(e); setAnnouncements(a);
-      }).finally(() => setLoading(false));
+      GET(`/dashboard/teacher/${institute.id}`)
+        .then(setTeacherData)
+        .catch(err => {
+          console.error('[teacher dashboard load]', err);
+        })
+        .finally(() => setLoading(false));
     } else {
       GET(`/dashboard/admin/${institute.id}`).then(d => {
         setAdminData(d);
@@ -76,81 +71,325 @@ export function Overview() {
     );
   }
 
+  // ==== TEACHER DASHBOARD OVERVIEW ====
   if (isTeacher) {
-    const totalStudents = batches.reduce((a, c) => a + (c.student_count || 0), 0);
-    const pendingEnrollments = enrollments.filter(e => e.status === 'pending').length;
-    
+    const tm = teacherData?.metrics || {
+      my_students: 0,
+      my_batches: 0,
+      todays_classes: 0,
+      attendance_pct: 0,
+      active_tests: 0,
+      avg_performance: 0,
+    };
+    const ta = teacherData?.alerts || { low_attendance_students: 0, unmarked_classes: 0 };
+    const todayClasses = teacherData?.today_classes || [];
+    const myBatches = teacherData?.my_batches || [];
+    const recentTests = teacherData?.recent_tests || [];
+    const announcements = teacherData?.announcements || [];
+
     const teacherStats = [
-      { label: 'My Batches', value: batches.length, icon: <BuildingIcon size={22} />, fg: '#10b981', bg: '#d1fae5', path: '/teacher/timetable' },
-      { label: 'My Students', value: totalStudents, icon: <UsersIcon size={22} />, fg: '#4f46e5', bg: '#e0e7ff', path: '/teacher/students' },
-      { label: 'Announcements', value: announcements.length, icon: <MegaphoneIcon size={22} />, fg: '#f59e0b', bg: '#fef3c7', path: '/teacher/announcements' },
-      { label: 'Schedule', value: 'Timetable', icon: <CalendarIcon size={22} />, fg: '#7c3aed', bg: '#f5f3ff', path: '/teacher/timetable' },
+      { label: 'My Students', value: tm.my_students, icon: <Users size={20} />, fg: '#4f46e5', bg: '#e0e7ff', path: '/teacher/students', trend: 'View roster' },
+      { label: 'My Batches', value: tm.my_batches, icon: <Building size={20} />, fg: '#10b981', bg: '#d1fae5', path: '/teacher/timetable', trend: 'View batches' },
+      { label: "Today's Classes", value: tm.todays_classes, icon: <Calendar size={20} />, fg: '#3b82f6', bg: '#dbeafe', path: '/teacher/timetable', trend: 'Timetable' },
+      { label: 'Class Attendance', value: `${tm.attendance_pct}%`, icon: <UserCheck size={20} />, fg: '#0ea5e9', bg: '#e0f2fe', path: '/teacher/attendance', trend: 'Mark now' },
+      { label: 'Active Tests', value: tm.active_tests, icon: <FileText size={20} />, fg: '#8b5cf6', bg: '#ede9fe', path: '/teacher/tests', trend: 'Manage tests' },
+      { label: 'Avg Performance', value: `${tm.avg_performance}%`, icon: <TrendingUp size={20} />, fg: '#ec4899', bg: '#fce7f3', path: '/teacher/tests', trend: 'Analytics' },
     ];
 
     return (
-      <div className="animate-fade-in">
+      <div className="animate-fade-in" style={{ paddingBottom: 60 }}>
         {/* Sleek Welcome Banner */}
-        <div className="glass-panel" style={{ marginBottom: 32, padding: '32px', background: 'var(--gradient-brand)', color: 'white', borderRadius: 'var(--radius-xl)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', flexWrap: 'wrap', gap: 24 }}>
+        <div className="glass-panel" style={{ marginBottom: 28, padding: '28px 32px', background: 'var(--gradient-brand)', color: 'white', borderRadius: 'var(--radius-xl)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ position: 'absolute', top: '-50%', left: '10%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(40px)' }}></div>
           <div style={{ position: 'absolute', bottom: '-50%', right: '10%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.15)', borderRadius: '50%', filter: 'blur(50px)' }}></div>
           
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 16, flex: '1 1 250px' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>👨‍🏫</div>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 16, flex: '1 1 280px' }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)' }}>👨‍🏫</div>
             <div>
-              <h1 className="h2" style={{ color: '#fff', marginBottom: 2, fontWeight: 700 }}>{getGreeting()}, {user?.full_name}</h1>
-              <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: 13, margin: 0 }}>{institute.name} • Teacher Dashboard</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <h1 className="h2" style={{ color: '#fff', margin: 0, fontWeight: 700, fontSize: '1.5rem' }}>{getGreeting()}, {user?.full_name}</h1>
+                {teacherData?.teacher?.subject && (
+                  <span style={{ fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+                    {teacherData.teacher.subject}
+                  </span>
+                )}
+              </div>
+              <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: 13, margin: 0 }}>{institute.name} • Faculty Dashboard</p>
             </div>
           </div>
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <button className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(12px)' }} onClick={() => navigate(`/teacher/attendance`)}>Mark Attendance</button>
-            <button className="btn" style={{ background: '#fff', color: 'var(--color-primary)', fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} onClick={() => navigate(`/teacher/planner`)}>Study Planner</button>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <button className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(12px)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => navigate('/teacher/attendance')}>
+              <UserCheck size={16} /> Mark Attendance
+            </button>
+            <button className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(12px)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => navigate('/teacher/live-classes')}>
+              <PlayCircle size={16} /> Live Classes
+            </button>
+            <button className="btn" style={{ background: '#fff', color: 'var(--color-primary)', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => navigate('/teacher/tests')}>
+              <Plus size={16} /> Create Test
+            </button>
           </div>
         </div>
 
-        {/* Stat Cards */}
-        <div className="animate-stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: 12, marginBottom: 32 }}>
-          {teacherStats.map(s => (
-            <div key={s.label} className="hover-lift" onClick={() => navigate(s.path)} style={{ background: 'var(--bg-surface)', padding: 16, cursor: 'pointer', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden', width: '100%' }}>
-              <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, background: `radial-gradient(circle at top right, ${s.fg}15, transparent 70%)` }} />
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg, ${s.fg}15, ${s.fg}05)`, color: s.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.fg}20`, zIndex: 1 }}>
+        {/* Top Key Metrics Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 14, marginBottom: 28 }}>
+          {teacherStats.map((s, i) => (
+            <div key={i} onClick={() => navigate(s.path)} className="hover-lift" style={{ background: 'var(--bg-surface)', padding: '18px 16px', cursor: 'pointer', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden', width: '100%' }}>
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 90, height: 40, background: `radial-gradient(ellipse at top, ${s.fg}20, transparent 70%)` }} />
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg, ${s.fg}18, ${s.fg}06)`, color: s.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.fg}25`, zIndex: 1 }}>
                 {s.icon}
               </div>
               <div style={{ zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase', textAlign: 'center', wordBreak: 'break-word', maxWidth: '100%' }}>{s.label}</div>
-                <div style={{ fontSize: 'clamp(18px, 2vw, 24px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, wordBreak: 'break-word', maxWidth: '100%', textAlign: 'center' }}>{s.value}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em', marginBottom: 4, textTransform: 'uppercase', textAlign: 'center' }}>{s.label}</div>
+                <div style={{ fontSize: 'clamp(20px, 2.2vw, 26px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, textAlign: 'center' }}>{s.value}</div>
+              </div>
+              <div style={{ fontSize: 11, color: s.fg, fontWeight: 600, marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, zIndex: 1, background: `${s.fg}10`, padding: '3px 8px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+                {s.trend} <ChevronRight size={12} />
               </div>
             </div>
           ))}
         </div>
 
-        <div className="g2" style={{ alignItems: 'start', gap: 24 }}>
-          <div className="card" style={{ background: 'var(--bg-tertiary)' }}>
-            <div className="fxb" style={{ marginBottom: 16 }}>
-              <h3 className="h3" style={{ marginBottom: 0 }}>Quick Actions</h3>
+        {/* Alerts Banner (if any) */}
+        {(ta.unmarked_classes > 0 || ta.low_attendance_students > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 28 }}>
+            {ta.unmarked_classes > 0 && (
+              <div className="hover-lift fxb" style={{ background: 'var(--bg-surface)', padding: '14px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigate('/teacher/attendance')}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(to bottom, #3b82f6, #60a5fa)' }} />
+                <div className="fx" style={{ gap: 12 }}>
+                  <div style={{ background: '#3b82f615', color: '#3b82f6', padding: 8, borderRadius: 8 }}><Calendar size={18} /></div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Pending Attendance</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{ta.unmarked_classes} class(es) pending today</div>
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, background: '#3b82f610', padding: '4px 8px', borderRadius: 6 }}>Mark</span>
+              </div>
+            )}
+            {ta.low_attendance_students > 0 && (
+              <div className="hover-lift fxb" style={{ background: 'var(--bg-surface)', padding: '14px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigate('/teacher/students')}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'linear-gradient(to bottom, #ef4444, #f87171)' }} />
+                <div className="fx" style={{ gap: 12 }}>
+                  <div style={{ background: '#ef444415', color: '#ef4444', padding: 8, borderRadius: 8 }}><AlertCircle size={18} /></div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Low Attendance Warning</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{ta.low_attendance_students} students below 75%</div>
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600, background: '#ef444410', padding: '4px 8px', borderRadius: 6 }}>View</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Today's Schedule Section */}
+        <div className="card" style={{ marginBottom: 28, padding: 24, borderRadius: 'var(--radius-xl)', background: 'var(--bg-surface)' }}>
+          <div className="fxb" style={{ marginBottom: 18 }}>
+            <div className="fx" style={{ gap: 10 }}>
+              <div style={{ background: '#3b82f615', color: '#3b82f6', padding: 8, borderRadius: 8 }}>
+                <Clock size={18} />
+              </div>
+              <div>
+                <h3 className="h3" style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Today's Teaching Schedule</h3>
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Your scheduled lectures and live sessions for today</p>
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-               <button className="btn bd w-full" style={{ height: 60, justifyContent: 'center', flexDirection: 'column', gap: 4 }} onClick={() => navigate('/teacher/timetable')}><CalendarIcon size={18} /> View Timetable</button>
-               <button className="btn bd w-full" style={{ height: 60, justifyContent: 'center', flexDirection: 'column', gap: 4 }} onClick={() => navigate('/teacher/materials')}><BookOpenIcon size={18} /> Study Materials</button>
-               <button className="btn bd w-full" style={{ height: 60, justifyContent: 'center', flexDirection: 'column', gap: 4 }} onClick={() => navigate('/teacher/tests')}><FileTextIcon size={18} /> Manage Tests</button>
-               <button className="btn bd w-full" style={{ height: 60, justifyContent: 'center', flexDirection: 'column', gap: 4 }} onClick={() => navigate('/teacher/planner')}><ClockIcon size={18} /> Planner</button>
-            </div>
+            <button className="btn bs bsm" onClick={() => navigate('/teacher/timetable')}>Full Timetable →</button>
           </div>
 
-          <div className="glass-panel" style={{ flex: 1, minWidth: 320, padding: 24, borderRadius: 'var(--radius-xl)' }}>
-            <div className="fxb" style={{ marginBottom: 24 }}>
-              <h3 className="h3" style={{ marginBottom: 0 }}>Recent Announcements</h3>
-              <button className="btn bs bsm" onClick={() => navigate(`/teacher/announcements`)}>View All</button>
-            </div>
-            {announcements.length > 0 ? announcements.slice(0, 4).map(a => (
-              <div key={a.id} style={{ padding: '16px 0', borderBottom: '1px solid var(--border-light)' }}>
-                <div className="fxb" style={{ marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{a.title}</span>
-                  <span className="badge" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>{a.audience}</span>
+          {todayClasses.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              {todayClasses.map((c, i) => (
+                <div key={i} style={{ padding: '16px 20px', borderRadius: 14, background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}>
+                  <div className="fxb">
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '3px 10px', borderRadius: 20 }}>
+                      🕒 {c.start_time?.slice(0, 5)} – {c.end_time?.slice(0, 5)}
+                    </span>
+                    {Number(c.attendance_marked_count) > 0 ? (
+                      <span className="badge" style={{ background: '#d1fae5', color: '#065f46', fontSize: 11 }}>✓ Marked</span>
+                    ) : (
+                      <span className="badge" style={{ background: '#fef3c7', color: '#92400e', fontSize: 11 }}>Pending</span>
+                    )}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700 }}>{c.batch_name}</h4>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      📚 {c.subject || 'General'} {c.room ? `• 📍 ${c.room}` : ''} • 👥 {c.student_count || 0} students
+                    </div>
+                  </div>
+                  <div className="fx" style={{ gap: 8, marginTop: 'auto' }}>
+                    <button className="btn bp bsm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => navigate(`/teacher/attendance`)}>
+                      Mark Attendance
+                    </button>
+                    {c.meet_link && (
+                      <a href={c.meet_link} target="_blank" rel="noopener noreferrer" className="btn bs bsm" style={{ justifyContent: 'center' }}>
+                        Join Meet ↗
+                      </a>
+                    )}
+                  </div>
                 </div>
-                <p className="muted" style={{ fontSize: '0.8125rem', lineHeight: 1.5, margin: 0 }}>{a.body?.slice(0, 80)}{a.body?.length > 80 ? '…' : ''}</p>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--bg-tertiary)', borderRadius: 12, border: '1px dashed var(--border-color)' }}>
+              <span style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>🎉</span>
+              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>No classes scheduled for today</div>
+              <p className="muted" style={{ fontSize: 12, margin: '0 auto 14px', maxWidth: 360 }}>Enjoy your day, review study materials, or schedule new tests for your students.</p>
+              <button className="btn bs bsm" onClick={() => navigate('/teacher/timetable')}>Check Weekly Timetable</button>
+            </div>
+          )}
+        </div>
+
+        {/* My Batches Grid */}
+        <div className="card" style={{ marginBottom: 28, padding: 24, borderRadius: 'var(--radius-xl)', background: 'var(--bg-surface)' }}>
+          <div className="fxb" style={{ marginBottom: 18 }}>
+            <div className="fx" style={{ gap: 10 }}>
+              <div style={{ background: '#10b98115', color: '#10b981', padding: 8, borderRadius: 8 }}>
+                <Building size={18} />
               </div>
-            )) : <EmptyState icon={MegaphoneIcon} title="No Announcements" description="" />}
+              <div>
+                <h3 className="h3" style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>My Assigned Batches</h3>
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>Batches assigned to you for teaching and evaluation</p>
+              </div>
+            </div>
+            <button className="btn bs bsm" onClick={() => navigate('/teacher/students')}>View All Students →</button>
+          </div>
+
+          {myBatches.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+              {myBatches.map(b => (
+                <div key={b.id} className="hover-lift" style={{ padding: 18, borderRadius: 14, background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div className="fxb">
+                    <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{b.name}</h4>
+                    <span className="badge" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 700 }}>
+                      {b.student_count || 0} students
+                    </span>
+                  </div>
+                  {b.description && (
+                    <p className="muted" style={{ margin: 0, fontSize: 12, lineHeight: 1.4 }}>
+                      {b.description.slice(0, 70)}{b.description.length > 70 ? '…' : ''}
+                    </p>
+                  )}
+                  <div className="fx" style={{ gap: 8, marginTop: 'auto', paddingTop: 8, borderTop: '1px solid var(--border-light)' }}>
+                    <button className="btn bs bsm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => navigate('/teacher/students')}>
+                      Students
+                    </button>
+                    <button className="btn bs bsm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => navigate('/teacher/attendance')}>
+                      Attendance
+                    </button>
+                    <button className="btn bs bsm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => navigate('/teacher/tests')}>
+                      Tests
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '36px 20px', textAlign: 'center', background: 'var(--bg-tertiary)', borderRadius: 14, border: '1px dashed var(--border-color)' }}>
+              <span style={{ fontSize: 32, display: 'block', marginBottom: 10 }}>📚</span>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 6 }}>No Batches Assigned Yet</div>
+              <p className="muted" style={{ fontSize: 13, margin: '0 auto 16px', maxWidth: 440, lineHeight: 1.5 }}>
+                You have not been assigned to any batches or timetable slots yet. Once your institute administrator assigns you to a batch in the Batches or Timetable section, your batches and students will appear here.
+              </p>
+              <button className="btn bs bsm" onClick={() => navigate('/teacher/timetable')}>
+                <CalendarIcon size={14} style={{ marginRight: 6 }} /> Check Timetable
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 2-Column: Recent Tests & Announcements */}
+        <div className="g2" style={{ alignItems: 'start', gap: 24 }}>
+          {/* Recent Tests */}
+          <div className="glass-panel" style={{ padding: 24, borderRadius: 'var(--radius-xl)' }}>
+            <div className="fxb" style={{ marginBottom: 18 }}>
+              <div className="fx" style={{ gap: 8 }}>
+                <FileText size={18} style={{ color: 'var(--color-primary)' }} />
+                <h3 className="h3" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Batch Tests</h3>
+              </div>
+              <button className="btn bs bsm" onClick={() => navigate('/teacher/tests')}>Manage Tests</button>
+            </div>
+            {recentTests.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {recentTests.slice(0, 4).map(t => (
+                  <div key={t.id} style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--bg-surface)', border: '1px solid var(--border-light)' }}>
+                    <div className="fxb" style={{ marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t.title}</span>
+                      <span className="badge" style={{ background: t.status === 'active' ? '#d1fae5' : '#e0e7ff', color: t.status === 'active' ? '#065f46' : '#4338ca', fontSize: 10 }}>
+                        {t.status}
+                      </span>
+                    </div>
+                    <div className="fxb" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                      <span>{t.batch_name} • {t.subject || 'Mixed'}</span>
+                      <span>{t.submissions_count || 0} submissions</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: 28, textAlign: 'center', background: 'var(--bg-surface)', borderRadius: 12, border: '1px dashed var(--border-color)' }}>
+                <span style={{ fontSize: 24, display: 'block', marginBottom: 6 }}>📝</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No tests conducted yet</span>
+                <div style={{ marginTop: 10 }}>
+                  <button className="btn bp bsm" onClick={() => navigate('/teacher/tests')}>+ Create Test</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Announcements */}
+          <div className="glass-panel" style={{ padding: 24, borderRadius: 'var(--radius-xl)' }}>
+            <div className="fxb" style={{ marginBottom: 18 }}>
+              <div className="fx" style={{ gap: 8 }}>
+                <Megaphone size={18} style={{ color: '#f59e0b' }} />
+                <h3 className="h3" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Announcements</h3>
+              </div>
+              <button className="btn bs bsm" onClick={() => navigate('/teacher/announcements')}>View All</button>
+            </div>
+            {announcements.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {announcements.slice(0, 4).map(a => (
+                  <div key={a.id} style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--bg-surface)', border: '1px solid var(--border-light)' }}>
+                    <div className="fxb" style={{ marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{a.title}</span>
+                      <span className="badge" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', fontSize: 10 }}>
+                        {a.type || 'all'}
+                      </span>
+                    </div>
+                    <p className="muted" style={{ fontSize: 12, lineHeight: 1.4, margin: 0 }}>
+                      {a.content?.slice(0, 75)}{a.content?.length > 75 ? '…' : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: 28, textAlign: 'center', background: 'var(--bg-surface)', borderRadius: 12, border: '1px dashed var(--border-color)' }}>
+                <span style={{ fontSize: 24, display: 'block', marginBottom: 6 }}>📢</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No announcements yet</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Navigation Cards */}
+        <div style={{ marginTop: 28 }}>
+          <h3 className="h3" style={{ marginBottom: 14, fontSize: 15 }}>Quick Tools</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+            <button className="btn bd" style={{ height: 64, justifyContent: 'center', flexDirection: 'column', gap: 4, borderRadius: 12 }} onClick={() => navigate('/teacher/timetable')}>
+              <CalendarIcon size={18} /> Timetable
+            </button>
+            <button className="btn bd" style={{ height: 64, justifyContent: 'center', flexDirection: 'column', gap: 4, borderRadius: 12 }} onClick={() => navigate('/teacher/materials')}>
+              <BookOpenIcon size={18} /> Materials
+            </button>
+            <button className="btn bd" style={{ height: 64, justifyContent: 'center', flexDirection: 'column', gap: 4, borderRadius: 12 }} onClick={() => navigate('/teacher/tests')}>
+              <FileTextIcon size={18} /> Tests
+            </button>
+            <button className="btn bd" style={{ height: 64, justifyContent: 'center', flexDirection: 'column', gap: 4, borderRadius: 12 }} onClick={() => navigate('/teacher/planner')}>
+              <ClockIcon size={18} /> Planner
+            </button>
+            <button className="btn bd" style={{ height: 64, justifyContent: 'center', flexDirection: 'column', gap: 4, borderRadius: 12 }} onClick={() => navigate('/teacher/live-classes')}>
+              <PlayCircle size={18} /> Live Classes
+            </button>
           </div>
         </div>
       </div>
