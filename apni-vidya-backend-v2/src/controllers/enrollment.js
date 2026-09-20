@@ -142,11 +142,23 @@ async function approveRequest(req, res, next) {
       parentUserId = parentUser.rows[0].id;
     }
 
+    // Support admin overriding the student's batch during approval (Hybrid Solution)
+    const effectiveBatchId = (req.body && req.body.batch_id !== undefined)
+      ? (req.body.batch_id || null)
+      : enrollment.batch_id;
+
+    if (effectiveBatchId !== enrollment.batch_id) {
+      await client.query(
+        `UPDATE enrollment_requests SET batch_id = $1 WHERE id = $2`,
+        [effectiveBatchId, request_id]
+      );
+    }
+
     // Create student record
     await client.query(
       `INSERT INTO students (user_id, institute_id, batch_id, parent_user_id, enrollment_request_id)
        VALUES ($1, $2, $3, $4, $5)`,
-      [studentUser.rows[0].id, enrollment.institute_id, enrollment.batch_id, parentUserId, enrollment.id]
+      [studentUser.rows[0].id, enrollment.institute_id, effectiveBatchId, parentUserId, enrollment.id]
     );
 
     // Update enrollment request status
@@ -160,6 +172,7 @@ async function approveRequest(req, res, next) {
     res.json({
       message: 'Enrollment approved',
       student: studentUser.rows[0],
+      batch_id: effectiveBatchId,
       credentials: {
         student: { phone: enrollment.student_phone, temp_password: defaultPassword },
         ...(parentUserId ? { parent: { phone: enrollment.parent_phone, temp_password: parentPassword } } : {}),

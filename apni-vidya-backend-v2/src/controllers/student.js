@@ -235,11 +235,28 @@ async function bulkAdmit(req, res, next) {
 
         await client.query('COMMIT');
 
-        // Send email (fire-and-forget — don't block on failures)
-        sendCredentialsEmail({ to: email, password: tempPassword, instituteName, loginUrl })
-          .catch(err => console.error(`[bulk-admit] Email to ${email} failed:`, err.message));
+        // Send email with safety timeout (max 4 seconds) so serverless doesn't hang or freeze
+        let emailSent = false;
+        let emailError = null;
+        try {
+          const emailPromise = sendCredentialsEmail({ to: email, password: tempPassword, instituteName, loginUrl });
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 4000));
+          const emailRes = await Promise.race([emailPromise, timeoutPromise]);
+          emailSent = Boolean(emailRes && emailRes.success);
+          if (!emailSent && emailRes?.error) emailError = emailRes.error;
+        } catch (emErr) {
+          console.error(`[bulk-admit] Email to ${email} failed:`, emErr.message);
+          emailError = emErr.message;
+        }
 
-        results.push({ email, status: 'created', userId: userResult.rows[0].id });
+        results.push({
+          email,
+          status: 'created',
+          userId: userResult.rows[0].id,
+          temp_password: tempPassword,
+          email_sent: emailSent,
+          email_error: emailError,
+        });
         created++;
       } catch (err) {
         await client.query('ROLLBACK');
@@ -555,4 +572,71 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, create, update, remove, bulkAdmit, profileSetup, profileStatus, getMyProfile };
+// Reset student password (admin action).
+async function resetPassword(req, res, next) {
+  try {
+    const { id } = req.params;
+    const studentRes = await db.query(
+      `SELECT s.id, s.institute_id, u.id AS user_id, u.full_name, u.email, u.phone, i.name AS institute_name
+       FROM students s
+       JOIN users u ON s.user_id = u.id
+       JOIN institutes i ON s.institute_id = i.id
+       WHERE s.id = $1`,
+      [id]
+    );
+
+    if (studentRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const student = studentRes.rows[0];
+    if (!(await hasInstituteAccess(req.user, student.institute_id))) {
+      return res.status(403).json({ error: 'Not authorized for this institute' });
+    }
+
+    const tempPassword = generateTempPassword();
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+    await db.query(
+      `UPDATE users 
+       SET password_hash = $1, must_reset_password = true, updated_at = now()
+       WHERE id = $2`,
+      [passwordHash, student.user_id]
+    );
+
+    const loginUrl = process.env.FRONTEND_URL
+      ? `${process.env.FRONTEND_URL}/login`
+      : `${process.env.APP_URL || 'https://smart-test-and-evaluation-system.vercel.app'}/login`;
+
+    let emailSent = false;
+    if (student.email) {
+      try {
+        const emailPromise = sendCredentialsEmail({
+          to: student.email,
+          password: tempPassword,
+          instituteName: student.institute_name,
+          loginUrl,
+        });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 4000));
+        const emailRes = await Promise.race([emailPromise, timeoutPromise]);
+        emailSent = Boolean(emailRes && emailRes.success);
+      } catch (emErr) {
+        console.error(`[student resetPassword] email failed:`, emErr.message);
+      }
+    }
+
+    res.json({
+      message: 'Student password reset successfully',
+      temp_password: tempPassword,
+      full_name: student.full_name,
+      email: student.email,
+      phone: student.phone?.startsWith('TMP') ? null : student.phone,
+      email_sent: emailSent,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, create, update, remove, bulkAdmit, profileSetup, profileStatus, getMyProfile, resetPassword };

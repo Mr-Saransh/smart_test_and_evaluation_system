@@ -230,6 +230,7 @@ async function getBySlug(req, res, next) {
     );
 
     res.json({
+      ...result.rows[0],
       institute: result.rows[0],
       batches: batches.rows,
     });

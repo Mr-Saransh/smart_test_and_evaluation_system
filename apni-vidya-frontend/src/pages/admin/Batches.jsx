@@ -259,6 +259,18 @@ export function Batches() {
                     {selectedBatch.description && <p className="muted" style={{ fontSize: '0.9rem' }}>{selectedBatch.description}</p>}
                   </div>
                   <div className="fx fw" style={{ gap: 10 }}>
+                    <button
+                      className="btn bs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const url = `${window.location.origin}/enroll/${institute?.enrollment_slug}?batch=${selectedBatch.id}`;
+                        navigator.clipboard.writeText(url);
+                        toast(`Direct link for "${selectedBatch.name}" copied!`, 'success');
+                      }}
+                      title="Copy direct student enrollment link for this batch"
+                    >
+                      🔗 Copy Batch Link
+                    </button>
                     {selectedBatch.is_active ? (
                       <>
                         <button className="btn bs" onClick={(e) => openEdit(selectedBatch, e)}>✎ Edit Batch</button>
@@ -495,8 +507,10 @@ export function Batches() {
                     </div>
 
                     <div className="card" style={{ padding: 28, textAlign: 'center' }}>
-                      <h3 className="h2" style={{ marginBottom: 8 }}>Enrollment QR Code</h3>
-                      <p className="muted" style={{ fontSize: 12, marginBottom: 16 }}>Scan to open student self-enrollment form</p>
+                      <h3 className="h2" style={{ marginBottom: 8 }}>Batch Enrollment</h3>
+                      <p className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
+                        Direct enrollment link for <strong>{selectedBatch.name}</strong>
+                      </p>
                       <div style={{ width: 200, height: 200, margin: '0 auto 16px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
                         {qrLoading ? (
                           <span className="muted" style={{ fontSize: 13 }}>Generating...</span>
@@ -510,7 +524,29 @@ export function Batches() {
                         )}
                       </div>
                       <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, color: 'var(--color-primary)', wordBreak: 'break-all', marginBottom: 12 }}>
-                        /enroll/{institute?.enrollment_slug}
+                        /enroll/{institute?.enrollment_slug}?batch={selectedBatch.id}
+                      </div>
+                      <div className="fx" style={{ gap: 8, marginBottom: 10 }}>
+                        <button
+                          className="btn bp bsm"
+                          style={{ flex: 1, justifyContent: 'center' }}
+                          onClick={() => {
+                            const url = `${window.location.origin}/enroll/${institute?.enrollment_slug}?batch=${selectedBatch.id}`;
+                            navigator.clipboard.writeText(url);
+                            toast(`Direct link for "${selectedBatch.name}" copied!`, 'success');
+                          }}
+                        >
+                          🔗 Copy Batch Link
+                        </button>
+                        <a
+                          href={`/enroll/${institute?.enrollment_slug}?batch=${selectedBatch.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn bs bsm"
+                          style={{ justifyContent: 'center' }}
+                        >
+                          Open ↗
+                        </a>
                       </div>
                       <button className="btn bs bsm w-full" style={{ justifyContent: 'center' }} onClick={regenQR} disabled={qrLoading}>
                         {qrLoading ? 'Generating...' : 'Regenerate QR Code'}

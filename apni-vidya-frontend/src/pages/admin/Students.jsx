@@ -42,6 +42,57 @@ export function Students() {
   const [saving, setSaving] = useState(false);
   const [selectedReportStudentId, setSelectedReportStudentId] = useState(null);
 
+  // Reset Password state
+  const [resetResult, setResetResult] = useState(null);
+  const [resettingId, setResettingId] = useState(null);
+
+  const handleResetPassword = async (student) => {
+    if (!window.confirm(`Reset password for ${student.full_name || student.email}? A new temporary password will be generated.`)) return;
+    setResettingId(student.id);
+    try {
+      const res = await POST(`/students/${student.id}/reset-password`);
+      setResetResult(res);
+      toast('Password reset successfully', 'success');
+    } catch (err) {
+      toast(err.message || 'Failed to reset password', 'error');
+    } finally {
+      setResettingId(null);
+    }
+  };
+
+  const copyText = (text, msg = 'Copied to clipboard!') => {
+    navigator.clipboard.writeText(text);
+    toast(msg, 'success');
+  };
+
+  const copyBulkCredentials = () => {
+    if (!admissionResults?.results) return;
+    const created = admissionResults.results.filter(r => r.status === 'created' && r.temp_password);
+    if (created.length === 0) return;
+    let text = `Apni Vidya - Student Credentials\n`;
+    text += `Institute: ${institute?.name || 'Apni Vidya'}\n\n`;
+    created.forEach((s, idx) => {
+      text += `${idx + 1}. Email: ${s.email} | Temporary Password: ${s.temp_password}\n`;
+    });
+    text += `\nLogin URL: ${window.location.origin}/login\n`;
+    copyText(text, 'All credentials copied to clipboard!');
+  };
+
+  const downloadBulkCredentialsCsv = () => {
+    if (!admissionResults?.results) return;
+    const created = admissionResults.results.filter(r => r.status === 'created' && r.temp_password);
+    if (created.length === 0) return;
+    const rows = [
+      ['Email', 'Temporary Password', 'Login URL', 'Status', 'Email Sent'],
+      ...created.map(r => [r.email, r.temp_password, `${window.location.origin}/login`, r.status, r.email_sent ? 'Yes' : 'No'])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Student Credentials');
+    XLSX.writeFile(wb, `Student_Credentials_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast('Credentials Excel file downloaded', 'success');
+  };
+
   // Profile status view
   const [activeTab, setActiveTab] = useState('students'); // 'students' | 'status'
   const [profileStatus, setProfileStatus] = useState([]);
@@ -353,9 +404,18 @@ export function Students() {
                       </td>
                       <td data-label="Joined"><div className="muted" style={{ fontSize: 13 }}>{formatDate(s.created_at)}</div></td>
                       <td data-label="Actions">
-                        <div className="fx" style={{ gap: 6 }}>
+                        <div className="fx" style={{ gap: 6, flexWrap: 'wrap' }}>
                           <button className="btn bp bsm" onClick={() => setSelectedReportStudentId(s.id)}>Report</button>
                           <button className="btn bs bsm" onClick={() => openEdit(s)}>Edit</button>
+                          <button
+                            className="btn bs bsm"
+                            style={{ borderColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+                            onClick={() => handleResetPassword(s)}
+                            disabled={resettingId === s.id}
+                            title="Reset student password"
+                          >
+                            {resettingId === s.id ? '...' : 'Reset Pwd'}
+                          </button>
                           <button className="btn bd bsm" style={{ color: 'var(--color-error)' }} onClick={() => remove(s.id)}>Del</button>
                         </div>
                       </td>
@@ -592,20 +652,36 @@ export function Students() {
       <Modal
         isOpen={Boolean(showResults && admissionResults)}
         onClose={() => setShowResults(false)}
-        title="Admission Results"
-        maxWidth={520}
+        title="Admission Results & Credentials"
+        maxWidth={640}
         footer={
-          <button className="btn bp w-full" style={{ justifyContent: 'center' }} onClick={() => setShowResults(false)}>Done</button>
+          <div className="fx" style={{ gap: 10, width: '100%', flexWrap: 'wrap' }}>
+            {admissionResults?.results?.some(r => r.status === 'created' && r.temp_password) && (
+              <>
+                <button className="btn bs" onClick={copyBulkCredentials} style={{ flex: '1 1 160px' }}>
+                  <CopyIcon size={15} style={{ marginRight: 6 }} /> Copy All Credentials
+                </button>
+                <button className="btn bs" onClick={downloadBulkCredentialsCsv} style={{ flex: '1 1 160px' }}>
+                  <DownloadIcon size={15} style={{ marginRight: 6 }} /> Download Excel
+                </button>
+              </>
+            )}
+            <button className="btn bp" style={{ flex: '1 1 120px', justifyContent: 'center' }} onClick={() => setShowResults(false)}>
+              Done
+            </button>
+          </div>
         }
       >
         {admissionResults && (
           <>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ width: 64, height: 64, background: 'var(--color-success-bg)', color: 'var(--color-success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-                <CheckCircleIcon size={32} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ width: 56, height: 56, background: 'var(--color-success-bg)', color: 'var(--color-success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <CheckCircleIcon size={30} />
               </div>
-              <h2 className="h2">Admission Complete</h2>
-              <p className="muted" style={{ fontSize: 14 }}>Credentials have been emailed to each student automatically.</p>
+              <h2 className="h2" style={{ marginBottom: 4 }}>Admission Complete</h2>
+              <p className="muted" style={{ fontSize: 13 }}>
+                Temporary credentials have been generated. If email delivery is unavailable, you can copy or export them below.
+              </p>
             </div>
 
             {/* Summary Cards */}
@@ -615,38 +691,144 @@ export function Students() {
                 { label: 'Skipped', val: admissionResults.summary.skipped, color: '#d97706', bg: '#fef3c7' },
                 { label: 'Failed', val: admissionResults.summary.failed, color: 'var(--color-error)', bg: '#fee2e2' },
               ].map(c => (
-                <div key={c.label} style={{ flex: 1, textAlign: 'center', padding: '14px 10px', borderRadius: 10, background: c.bg }}>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: c.color }}>{c.val}</div>
+                <div key={c.label} style={{ flex: 1, textAlign: 'center', padding: '12px 10px', borderRadius: 10, background: c.bg }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: c.color }}>{c.val}</div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: c.color, opacity: 0.85 }}>{c.label}</div>
                 </div>
               ))}
             </div>
 
-            {/* Detail rows */}
+            {/* Detail rows with passwords and copy buttons */}
             {admissionResults.results?.length > 0 && (
-              <div style={{ maxHeight: 240, overflowY: 'auto', background: 'var(--bg-secondary)', borderRadius: 10, padding: 10, border: '1px solid var(--border-color)' }}>
+              <div style={{ maxHeight: 280, overflowY: 'auto', background: 'var(--bg-secondary)', borderRadius: 10, padding: 10, border: '1px solid var(--border-color)' }}>
                 {admissionResults.results.map((r, i) => (
-                  <div key={i} className="fxb" style={{ padding: '8px 10px', borderBottom: i < admissionResults.results.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{r.email}</div>
+                  <div key={i} className="fxb" style={{ padding: '10px', borderBottom: i < admissionResults.results.length - 1 ? '1px solid var(--border-light)' : 'none', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.email}</div>
+                      {r.status === 'created' && r.temp_password && (
+                        <div className="fx" style={{ gap: 6, alignItems: 'center', marginTop: 4 }}>
+                          <span className="muted" style={{ fontSize: 12 }}>Temp Pwd:</span>
+                          <code style={{ background: '#fff', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: 4, fontWeight: 700, color: 'var(--color-primary)', fontSize: 12 }}>
+                            {r.temp_password}
+                          </code>
+                          <button
+                            className="btn bs bsm"
+                            style={{ padding: '2px 6px', fontSize: 11 }}
+                            onClick={() => copyText(r.temp_password, `Password for ${r.email} copied!`)}
+                            title="Copy Password"
+                          >
+                            <CopyIcon size={12} />
+                          </button>
+                        </div>
+                      )}
                       {r.reason && (
                         <div style={{ fontSize: 11, color: r.status === 'failed' ? 'var(--color-error)' : '#d97706', marginTop: 2 }}>
                           {r.reason}
                         </div>
                       )}
                     </div>
-                    <span className="badge" style={{
-                      background: r.status === 'created' ? '#d1fae5' : r.status === 'skipped' ? '#fef3c7' : '#fee2e2',
-                      color: r.status === 'created' ? '#059669' : r.status === 'skipped' ? '#d97706' : '#dc2626',
-                      fontWeight: 600, fontSize: 11, flexShrink: 0,
-                    }}>
-                      {r.status === 'created' ? '✅ Created' : r.status === 'skipped' ? '⚠️ Skipped' : '❌ Failed'}
-                    </span>
+                    <div className="fx" style={{ gap: 6, alignItems: 'center' }}>
+                      {r.status === 'created' && (
+                        r.email_sent ? (
+                          <span className="badge" style={{ background: '#d1fae5', color: '#059669', fontSize: 11, fontWeight: 600 }}>
+                            📧 Emailed
+                          </span>
+                        ) : (
+                          <span className="badge" style={{ background: '#fef3c7', color: '#d97706', fontSize: 11, fontWeight: 600 }} title={r.email_error || 'Email could not be delivered'}>
+                            ⚠️ Share manually
+                          </span>
+                        )
+                      )}
+                      <span className="badge" style={{
+                        background: r.status === 'created' ? '#d1fae5' : r.status === 'skipped' ? '#fef3c7' : '#fee2e2',
+                        color: r.status === 'created' ? '#059669' : r.status === 'skipped' ? '#d97706' : '#dc2626',
+                        fontWeight: 600, fontSize: 11, flexShrink: 0,
+                      }}>
+                        {r.status === 'created' ? '✅ Created' : r.status === 'skipped' ? '⚠️ Skipped' : '❌ Failed'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </>
+        )}
+      </Modal>
+
+      {/* ─── Reset Password Modal ─── */}
+      <Modal
+        isOpen={Boolean(resetResult)}
+        onClose={() => setResetResult(null)}
+        title="Student Password Reset"
+        maxWidth={460}
+        footer={
+          <div className="fx" style={{ gap: 10, width: '100%' }}>
+            <button
+              className="btn bs"
+              style={{ flex: 1 }}
+              onClick={() => copyText(`Login: ${resetResult.email || resetResult.phone}\nTemporary Password: ${resetResult.temp_password}\nURL: ${window.location.origin}/login`, 'Credentials copied!')}
+            >
+              <CopyIcon size={15} style={{ marginRight: 6 }} /> Copy Info
+            </button>
+            <button className="btn bp" style={{ flex: 1 }} onClick={() => setResetResult(null)}>
+              Done
+            </button>
+          </div>
+        }
+      >
+        {resetResult && (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'var(--color-primary-bg)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                <CheckCircleIcon size={26} />
+              </div>
+              <h3 className="h3" style={{ margin: 0 }}>Password Reset for {resetResult.full_name}</h3>
+              <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                {resetResult.email_sent ? 'A new temporary password was sent via email.' : 'Email could not be delivered — please share these credentials directly.'}
+              </p>
+            </div>
+
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+              <div className="fxb" style={{ marginBottom: 8 }}>
+                <span className="muted" style={{ fontSize: 13 }}>Student:</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{resetResult.full_name}</span>
+              </div>
+              {resetResult.email && (
+                <div className="fxb" style={{ marginBottom: 8 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>Email / Login ID:</span>
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{resetResult.email}</span>
+                </div>
+              )}
+              {resetResult.phone && (
+                <div className="fxb" style={{ marginBottom: 8 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>Phone:</span>
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{resetResult.phone}</span>
+                </div>
+              )}
+              <div className="fxb" style={{ alignItems: 'center' }}>
+                <span className="muted" style={{ fontSize: 13 }}>New Temp Password:</span>
+                <div className="fx" style={{ gap: 8, alignItems: 'center' }}>
+                  <code style={{ background: '#fff', border: '1px solid var(--border-color)', padding: '4px 8px', borderRadius: 6, fontWeight: 700, color: 'var(--color-primary)', fontSize: 15 }}>
+                    {resetResult.temp_password}
+                  </code>
+                  <button
+                    className="btn bs bsm"
+                    onClick={() => copyText(resetResult.temp_password, 'Temporary password copied!')}
+                    title="Copy Password"
+                    style={{ padding: '4px 8px' }}
+                  >
+                    <CopyIcon size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--color-primary-bg)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--color-primary-light)' }}>
+              <span style={{ fontSize: 12, color: 'var(--color-primary)', fontWeight: 500 }}>
+                💡 The student will be prompted to choose their own permanent password upon logging in.
+              </span>
+            </div>
+          </div>
         )}
       </Modal>
 

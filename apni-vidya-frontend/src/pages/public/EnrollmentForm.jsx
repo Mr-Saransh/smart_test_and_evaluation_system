@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { GET, POST, toast } from '../../utils/api';
 import { GraduationCapIcon, CheckCircleIcon } from '../../components/common/Icons';
 
 export function EnrollmentForm() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const batchParam = searchParams.get('batch') || searchParams.get('batch_id') || '';
+
   const [institute, setInstitute] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -12,15 +15,20 @@ export function EnrollmentForm() {
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     student_name: '', student_phone: '',
-    parent_name: '', parent_phone: '', batch_id: '',
+    parent_name: '', parent_phone: '', batch_id: batchParam,
   });
 
   useEffect(() => {
     GET(`/institutes/enroll/${slug}`)
-      .then(setInstitute)
+      .then((data) => {
+        setInstitute(data);
+        if (batchParam) {
+          setForm(prev => ({ ...prev, batch_id: batchParam }));
+        }
+      })
       .catch(() => setError('Institute not found or enrollment link is invalid.'))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, batchParam]);
 
   const set = (k) => (e) => setForm(prev => ({
     ...prev,
@@ -88,20 +96,24 @@ export function EnrollmentForm() {
             <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-heading)' }}>Apni Vidya</span>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-heading)', marginBottom: 8 }}>
-            Enroll at {institute?.name}
+            Enroll at {institute?.name || institute?.institute?.name}
           </h1>
-          {institute?.city && <p className="muted">{[institute.city, institute.state].filter(Boolean).join(', ')}</p>}
+          {(institute?.city || institute?.institute?.city) && (
+            <p className="muted">
+              {[institute?.city || institute?.institute?.city, institute?.state || institute?.institute?.state].filter(Boolean).join(', ')}
+            </p>
+          )}
         </div>
 
         <div className="card" style={{ padding: 28 }}>
           <form onSubmit={handleSubmit}>
             <div className="field">
               <label>Student Full Name *</label>
-              <input className="inp" value={form.student_name} onChange={set('student_name')} placeholder="Enter student's full name" />
+              <input className="inp" value={form.student_name} onChange={set('student_name')} placeholder="Enter student's full name" required />
             </div>
             <div className="field">
               <label>Student Phone Number *</label>
-              <input className="inp" type="tel" value={form.student_phone} onChange={set('student_phone')} placeholder="10-digit mobile number" />
+              <input className="inp" type="tel" value={form.student_phone} onChange={set('student_phone')} placeholder="10-digit mobile number" required />
             </div>
             <div className="field">
               <label>Parent/Guardian Name</label>
@@ -111,12 +123,19 @@ export function EnrollmentForm() {
               <label>Parent Phone Number</label>
               <input className="inp" type="tel" value={form.parent_phone} onChange={set('parent_phone')} placeholder="Parent's mobile number" />
             </div>
-            {institute?.batches?.length > 0 && (
+            {(institute?.batches || institute?.institute?.batches)?.length > 0 && (
               <div className="field">
-                <label>Select Batch</label>
+                <div className="fxb" style={{ marginBottom: 6 }}>
+                  <label style={{ marginBottom: 0 }}>Target Batch</label>
+                  {form.batch_id && (
+                    <span className="badge" style={{ background: 'var(--color-primary-bg)', color: 'var(--color-primary)', fontSize: 11 }}>
+                      Pre-selected
+                    </span>
+                  )}
+                </div>
                 <select className="sel w-full" value={form.batch_id} onChange={set('batch_id')}>
                   <option value="">Choose a batch</option>
-                  {institute.batches.map(b => (
+                  {(institute?.batches || institute?.institute?.batches || []).map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>

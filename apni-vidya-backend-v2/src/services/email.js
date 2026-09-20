@@ -11,8 +11,8 @@ let _transporter = null;
 function getTransporter() {
   if (_transporter) return _transporter;
 
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '465', 10);
   const user = process.env.SMTP_USER || process.env.SMTP_EMAIL;
   const pass = process.env.SMTP_PASS || process.env.SMTP_APP_PASSWORD;
 
@@ -21,19 +21,16 @@ function getTransporter() {
     return null;
   }
 
-  if (host) {
-    _transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-  } else {
-    _transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-    });
-  }
+  _transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+    family: 4, // Force IPv4 to prevent IPv6 drops on serverless/cloud environments
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
+  });
 
   return _transporter;
 }
@@ -107,7 +104,7 @@ async function sendCredentialsEmail({ to, password, instituteName, loginUrl }) {
 
   if (!transporter) {
     console.log(`[email-mock] Would send credentials to ${to} | Password: ${password}`);
-    return { accepted: [to], mock: true };
+    return { accepted: [to], mock: true, success: true };
   }
 
   try {
@@ -117,10 +114,10 @@ async function sendCredentialsEmail({ to, password, instituteName, loginUrl }) {
       subject,
       html,
     });
-    return info;
+    return { ...info, success: true };
   } catch (err) {
     console.error(`[email] Failed to send to ${to}:`, err.message);
-    throw err;
+    return { success: false, error: err.message };
   }
 }
 

@@ -10,6 +10,7 @@ router.put('/me', authenticate, authorize('student'), student.profileSetup);
 router.post('/profile-setup', authenticate, authorize('student'), student.profileSetup);
 router.get('/profile-status/:institute_id', authenticate, authorize('institute_admin'), student.profileStatus);
 router.get('/:institute_id', authenticate, authorize('institute_admin', 'teacher'), student.list);
+router.post('/:id/reset-password', authenticate, authorize('institute_admin'), student.resetPassword);
 router.put('/:id', authenticate, authorize('institute_admin'), student.update);
 router.delete('/:id', authenticate, authorize('institute_admin'), student.remove);
 
