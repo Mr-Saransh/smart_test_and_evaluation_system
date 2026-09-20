@@ -13,7 +13,14 @@ export function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
+  const set = (k) => (e) => setForm(prev => ({
+    ...prev,
+    [k]: k === 'phone'
+      ? e.target.value.replace(/\D/g, '').slice(0, 10)
+      : k === 'otp'
+      ? e.target.value.replace(/\D/g, '').slice(0, 6)
+      : e.target.value
+  }));
   const pwdCheck = validatePassword(form.new_password);
   const pwdPct = passwordStrength(form.new_password);
   const pwdColor = pwdPct >= 80 ? '#10b981' : pwdPct >= 50 ? '#f59e0b' : '#ef4444';

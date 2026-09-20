@@ -22,7 +22,12 @@ export function EnrollmentForm() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
+  const set = (k) => (e) => setForm(prev => ({
+    ...prev,
+    [k]: (k === 'student_phone' || k === 'parent_phone')
+      ? e.target.value.replace(/\D/g, '').slice(0, 10)
+      : e.target.value
+  }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();

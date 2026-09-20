@@ -21,17 +21,33 @@ export function Teachers() {
   };
   useEffect(load, [institute]);
 
-  const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
+  const set = (k) => (e) => setForm(prev => ({
+    ...prev,
+    [k]: k === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value
+  }));
   const openCreate = () => { setEditing(null); setForm({ full_name: '', phone: '', email: '', password: '', subject: '' }); setShow(true); };
   const openEdit = (t) => { setEditing(t); setForm({ full_name: t.full_name, phone: t.phone, email: t.email || '', password: '', subject: t.subject || '' }); setShow(true); };
 
   const save = async () => {
-    if (!form.full_name || !form.phone || (!editing && !form.password)) {
-      toast('Name, phone, and password are required'); return;
+    if (!form.full_name || !form.phone || !form.email || (!editing && !form.password)) {
+      toast('Name, phone, email, and password are required'); return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      toast('Please enter a valid email address'); return;
+    }
+    if (form.phone.length !== 10) {
+      toast('Please enter a valid 10-digit mobile number'); return;
     }
     setSaving(true);
     try {
-      const body = { ...form, institute_id: institute.id };
+      const body = {
+        ...form,
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        full_name: form.full_name.trim(),
+        institute_id: institute.id
+      };
       if (!body.password) delete body.password; // Don't send empty password on update
       
       if (editing) await PUT(`/teachers/${editing.id}`, body, 'Teacher updated');
@@ -110,8 +126,8 @@ export function Teachers() {
             <input className="inp" type="tel" value={form.phone} onChange={set('phone')} placeholder="10-digit number" />
           </div>
           <div className="field">
-            <label>Email (Optional)</label>
-            <input className="inp" type="email" value={form.email} onChange={set('email')} placeholder="Email address" />
+            <label>Email Address *</label>
+            <input className="inp" type="email" value={form.email} onChange={set('email')} placeholder="teacher@institute.com" />
           </div>
         </div>
         <div className="g2">

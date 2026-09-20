@@ -675,7 +675,7 @@ export function StudentPortal() {
                   type="tel"
                   className="inp"
                   value={profileForm.phone}
-                  onChange={(e) => setProfileForm(p => ({ ...p, phone: e.target.value }))}
+                  onChange={(e) => setProfileForm(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                   placeholder="10-digit mobile number"
                 />
               </div>
@@ -732,7 +732,7 @@ export function StudentPortal() {
                   type="tel"
                   className="inp"
                   value={profileForm.parent_phone}
-                  onChange={(e) => setProfileForm(p => ({ ...p, parent_phone: e.target.value }))}
+                  onChange={(e) => setProfileForm(p => ({ ...p, parent_phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                   placeholder="10-digit mobile number"
                 />
               </div>

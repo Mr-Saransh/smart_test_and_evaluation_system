@@ -37,7 +37,7 @@ describe('validation', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Validation failed');
     expect(res.body.details.map((d) => d.field)).toEqual(
-      expect.arrayContaining(['phone', 'password', 'full_name'])
+      expect.arrayContaining(['phone', 'password', 'full_name', 'email'])
     );
   });
 });

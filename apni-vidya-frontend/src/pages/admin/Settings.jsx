@@ -243,7 +243,7 @@ export function Settings() {
                   type="tel"
                   className="inp"
                   value={form.phone}
-                  onChange={(e) => setForm(p => ({ ...p, phone: e.target.value }))}
+                  onChange={(e) => setForm(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                   placeholder="10-digit mobile number"
                 />
               </div>
@@ -303,7 +303,7 @@ export function Settings() {
                       type="tel"
                       className="inp"
                       value={form.parent_phone}
-                      onChange={(e) => setForm(p => ({ ...p, parent_phone: e.target.value }))}
+                      onChange={(e) => setForm(p => ({ ...p, parent_phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                       placeholder="10-digit parent phone"
                     />
                   </div>

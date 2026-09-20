@@ -23,8 +23,17 @@ export function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.full_name || !form.phone || !form.password) {
-      setError('Full name, phone, and password are required');
+    if (!form.full_name || !form.phone || !form.email || !form.password) {
+      setError('Full name, phone, email, and password are required');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (form.phone.length !== 10) {
+      setError('Enter a valid 10-digit mobile number');
       return;
     }
     if (!pwdCheck.valid) {
@@ -34,7 +43,12 @@ export function Signup() {
     setLoading(true);
     setError('');
     try {
-      const res = await POST('/auth/signup', form);
+      const res = await POST('/auth/signup', {
+        ...form,
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        full_name: form.full_name.trim()
+      });
       login(res.user, res.token);
       navigate('/admin/institute', { replace: true });
     } catch (err) {
@@ -118,7 +132,7 @@ export function Signup() {
                 {error && <div className="auth-error">{error}</div>}
 
                 <div className="field">
-                  <label htmlFor="signup-name">Full Name</label>
+                  <label htmlFor="signup-name">Full Name <span style={{ color: 'var(--color-error, #ef4444)' }}>*</span></label>
                   <div className="auth-input-wrapper">
                     <div className="auth-input-icon">
                       <UsersIcon size={18} color="#64748b" />
@@ -136,7 +150,7 @@ export function Signup() {
                 </div>
 
                 <div className="field">
-                  <label htmlFor="signup-phone">Phone Number</label>
+                  <label htmlFor="signup-phone">Phone Number <span style={{ color: 'var(--color-error, #ef4444)' }}>*</span></label>
                   <div className="auth-input-wrapper">
                     <div className="auth-input-icon">
                       <ShieldIcon size={18} color="#64748b" />
@@ -146,7 +160,7 @@ export function Signup() {
                       className="inp"
                       type="tel"
                       value={form.phone}
-                      onChange={set('phone')}
+                      onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                       placeholder="10-digit mobile number"
                       autoComplete="tel"
                     />
@@ -154,7 +168,7 @@ export function Signup() {
                 </div>
 
                 <div className="field">
-                  <label htmlFor="signup-email">Email <span className="muted">(optional)</span></label>
+                  <label htmlFor="signup-email">Email Address <span style={{ color: 'var(--color-error, #ef4444)' }}>*</span></label>
                   <div className="auth-input-wrapper">
                     <div className="auth-input-icon">
                       <span style={{ fontSize: 16 }}>✉️</span>

@@ -155,7 +155,10 @@ export function Students() {
   };
 
   // ─── Edit Handlers (from original) ───
-  const setEF = (k) => (e) => setEditForm(prev => ({ ...prev, [k]: e.target.value }));
+  const setEF = (k) => (e) => setEditForm(prev => ({
+    ...prev,
+    [k]: (k === 'phone' || k === 'parent_phone') ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value
+  }));
   const openEdit = (s) => {
     setEditing(s);
     setEditForm({

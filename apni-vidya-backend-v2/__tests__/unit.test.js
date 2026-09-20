@@ -60,14 +60,14 @@ describe('rate-limit keying (shared-NAT fix)', () => {
 
 describe('auth validation schemas', () => {
   test('valid signup passes', () => {
-    const r = signupSchema.safeParse({ phone: '9876543210', password: 'secret1', full_name: 'Asha Rao' });
+    const r = signupSchema.safeParse({ phone: '9876543210', email: 'asha@example.com', password: 'secret1', full_name: 'Asha Rao' });
     expect(r.success).toBe(true);
   });
   test('rejects bad phone and short password', () => {
     const r = signupSchema.safeParse({ phone: '123', password: 'x', full_name: 'A' });
     expect(r.success).toBe(false);
     const fields = r.error.issues.map((i) => i.path[0]);
-    expect(fields).toEqual(expect.arrayContaining(['phone', 'password', 'full_name']));
+    expect(fields).toEqual(expect.arrayContaining(['phone', 'password', 'full_name', 'email']));
   });
   test('login requires a password', () => {
     expect(loginSchema.safeParse({ phone: '9876543210' }).success).toBe(false);

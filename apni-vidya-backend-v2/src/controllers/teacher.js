@@ -8,11 +8,29 @@ async function create(req, res, next) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { institute_id, full_name, phone, email, subject } = req.body;
+    const { institute_id, full_name, phone, email, subject, password } = req.body;
 
-    if (!institute_id || !full_name || !phone) {
+    if (!institute_id || !full_name || !phone || !email) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'institute_id, full_name, and phone are required' });
+      return res.status(400).json({ error: 'institute_id, full_name, phone, and email are required' });
+    }
+
+    if (/[a-zA-Z]/.test(phone)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Phone number cannot contain alphabets' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!emailRegex.test(cleanEmail)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Enter a valid email address' });
+    }
+
+    const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
+    if (cleanPhone.length !== 10) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Enter a valid 10-digit mobile number' });
     }
 
     if (!(await hasInstituteAccess(req.user, institute_id, client))) {
@@ -20,31 +38,35 @@ async function create(req, res, next) {
       return res.status(403).json({ error: 'Not authorized for this institute' });
     }
 
-    // Check if user already exists
-    let userResult = await client.query('SELECT id, role FROM users WHERE phone = $1', [phone]);
+    // Check if user already exists by email (primary) or phone
+    let userResult = await client.query(
+      'SELECT id, role, email, phone FROM users WHERE LOWER(email) = LOWER($1) OR phone = $2',
+      [cleanEmail, cleanPhone]
+    );
     let userId;
     let isNewUser = false;
-    const tempPassword = crypto.randomBytes(4).toString('hex'); // 8-char random string
+    const effectivePassword = password || crypto.randomBytes(4).toString('hex');
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(effectivePassword, salt);
 
     if (userResult.rows.length > 0) {
       userId = userResult.rows[0].id;
-      // If user exists, but role is student/parent, we might have an issue, but let's just upgrade/add role logic?
-      // Actually, if the user exists but has a different role, for now we will just use their user ID.
-      // Ideally, the system should support multiple roles. For now, assume a phone number maps to one main user record.
-      // But we don't change their role if they are an admin.
-      if (userResult.rows[0].role !== 'institute_admin' && userResult.rows[0].role !== 'teacher') {
-         await client.query('UPDATE users SET role = $1 WHERE id = $2', ['teacher', userId]);
+      if (userResult.rows[0].role !== 'institute_admin' && userResult.rows[0].role !== 'super_admin') {
+        await client.query('UPDATE users SET role = $1 WHERE id = $2', ['teacher', userId]);
+      }
+      if (password) {
+        await client.query(
+          'UPDATE users SET password_hash = $1, must_reset_password = false, updated_at = now() WHERE id = $2',
+          [password_hash, userId]
+        );
       }
     } else {
       // Create new user
       isNewUser = true;
-      const salt = await bcrypt.genSalt(10);
-      const password_hash = await bcrypt.hash(tempPassword, salt);
-      
       const newUser = await client.query(
         `INSERT INTO users (phone, email, password_hash, role, full_name, must_reset_password)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [phone, email || null, password_hash, 'teacher', full_name, true]
+        [cleanPhone, cleanEmail, password_hash, 'teacher', full_name.trim(), !password]
       );
       userId = newUser.rows[0].id;
     }
@@ -67,13 +89,13 @@ async function create(req, res, next) {
 
     await client.query('COMMIT');
 
-    // Notify teacher
-    if (isNewUser) {
+    // Notify teacher via SMS if newly created and password was auto-generated
+    if (isNewUser && !password) {
       const instRow = await db.query('SELECT name FROM institutes WHERE id = $1', [institute_id]);
       const instName = instRow.rows[0]?.name || 'an institute';
-      const body = `You have been added as a teacher at ${instName}. Your temporary password is ${tempPassword}. Please log in and change your password.`;
+      const body = `You have been added as a teacher at ${instName}. Your temporary password is ${effectivePassword}. Please log in and change your password.`;
       try {
-        await resolveProvider('sms').send({ to: phone, body, channel: 'sms' });
+        await resolveProvider('sms').send({ to: cleanPhone, body, channel: 'sms' });
       } catch (e) {
         console.error('[teacher create] sms failed:', e.message);
       }
@@ -110,7 +132,7 @@ async function update(req, res, next) {
   const client = await db.getClient();
   try {
     const { id } = req.params;
-    const { full_name, phone, email, subject, is_active } = req.body;
+    const { full_name, phone, email, subject, is_active, password } = req.body;
 
     const teacherRow = await client.query('SELECT user_id, institute_id FROM teachers WHERE id = $1', [id]);
     if (teacherRow.rows.length === 0) return res.status(404).json({ error: 'Teacher not found' });
@@ -119,11 +141,26 @@ async function update(req, res, next) {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    if (phone && /[a-zA-Z]/.test(phone)) {
+      return res.status(400).json({ error: 'Phone number cannot contain alphabets' });
+    }
+
+    let cleanEmail = undefined;
+    if (email !== undefined) {
+      cleanEmail = String(email).trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (cleanEmail && !emailRegex.test(cleanEmail)) {
+        return res.status(400).json({ error: 'Enter a valid email address' });
+      }
+    }
+
+    const cleanPhone = phone !== undefined ? String(phone).replace(/\D/g, '').slice(-10) : undefined;
+
     await client.query('BEGIN');
     
     const userId = teacherRow.rows[0].user_id;
 
-    if (full_name !== undefined || phone !== undefined || email !== undefined || is_active !== undefined) {
+    if (full_name !== undefined || cleanPhone !== undefined || cleanEmail !== undefined || is_active !== undefined) {
       await client.query(
         `UPDATE users SET
          full_name = COALESCE($1, full_name),
@@ -132,8 +169,14 @@ async function update(req, res, next) {
          is_active = COALESCE($4, is_active),
          updated_at = now()
          WHERE id = $5`,
-        [full_name, phone, email, is_active, userId]
+        [full_name ? full_name.trim() : null, cleanPhone || null, cleanEmail || null, is_active, userId]
       );
+    }
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      const password_hash = await bcrypt.hash(password, salt);
+      await client.query('UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2', [password_hash, userId]);
     }
 
     if (subject !== undefined) {

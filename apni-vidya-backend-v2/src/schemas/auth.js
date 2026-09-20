@@ -8,7 +8,7 @@ const signupSchema = z.object({
   phone,
   password,
   full_name: z.string().trim().min(2, 'Full name is required').max(120),
-  email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
+  email: z.string().trim().email('Enter a valid email'),
   role: z.enum(['institute_admin', 'teacher']).optional(),
 });
 

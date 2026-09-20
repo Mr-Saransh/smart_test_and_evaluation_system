@@ -32,11 +32,25 @@ async function signup(req, res, next) {
   try {
     const { phone, email, password, full_name, role } = req.body;
 
-    if (!phone || !password || !full_name) {
-      return res.status(400).json({ error: 'phone, password, and full_name are required' });
+    if (!phone || !email || !password || !full_name) {
+      return res.status(400).json({ error: 'phone, email, password, and full_name are required' });
+    }
+    if (/[a-zA-Z]/.test(phone)) {
+      return res.status(400).json({ error: 'Phone number cannot contain alphabets' });
     }
     if (!validatePassword(password)) {
       return res.status(400).json({ error: 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Enter a valid email address' });
+    }
+
+    const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
+    if (cleanPhone.length !== 10) {
+      return res.status(400).json({ error: 'Enter a valid 10-digit mobile number' });
     }
 
     const allowedRoles = ['institute_admin', 'teacher'];
@@ -49,7 +63,7 @@ async function signup(req, res, next) {
       `INSERT INTO users (phone, email, password_hash, role, full_name)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, phone, email, role, full_name, created_at`,
-      [phone, email || null, password_hash, userRole, full_name]
+      [cleanPhone, cleanEmail, password_hash, userRole, full_name.trim()]
     );
 
     const user = result.rows[0];
@@ -68,7 +82,7 @@ async function login(req, res, next) {
     const { password } = req.body;
 
     if (!identifier || !password) {
-      return res.status(400).json({ error: 'Mobile number or email, and password are required' });
+      return res.status(400).json({ error: 'Email or mobile number, and password are required' });
     }
 
     // Support easy admin identifier shortcuts
@@ -76,11 +90,16 @@ async function login(req, res, next) {
       identifier = 'admin@apnividya.com';
     }
 
+    const normalizedPhone = identifier.replace(/\D/g, '').slice(-10);
+
     const result = await db.query(
-      `SELECT * FROM users WHERE phone = $1 OR LOWER(email) = LOWER($1)
+      `SELECT * FROM users 
+       WHERE LOWER(email) = LOWER($1) 
+          OR phone = $1
+          OR (length($2) = 10 AND phone = $2)
        ORDER BY CASE WHEN LOWER(email) = LOWER($1) THEN 0 ELSE 1 END
        LIMIT 1`,
-      [identifier]
+      [identifier, normalizedPhone]
     );
 
     if (result.rows.length === 0) {

@@ -28,7 +28,7 @@ export function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!identifier || !password) {
-      setError('Please enter both phone/email and password');
+      setError('Please enter both email/phone and password');
       return;
     }
 
@@ -136,14 +136,14 @@ export function Login() {
 
               <div className="auth-card-header">
                 <h2 className="h2">Welcome back</h2>
-                <p className="muted">Sign in with your registered phone or email</p>
+                <p className="muted">Sign in with your registered email or phone</p>
               </div>
 
               <form onSubmit={handleLogin} className="auth-form">
                 {error && <div className="auth-error">{error}</div>}
 
                 <div className="field">
-                  <label htmlFor="login-identifier">Phone or Email</label>
+                  <label htmlFor="login-identifier">Email or Phone</label>
                   <div className="auth-input-wrapper">
                     <div className="auth-input-icon">
                       <UsersIcon size={18} color="#64748b" />
@@ -154,7 +154,7 @@ export function Login() {
                       type="text"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="e.g. 9876543210 or admin@institute.com"
+                      placeholder="e.g. teacher@institute.com or 9876543210"
                       autoComplete="username"
                     />
                   </div>

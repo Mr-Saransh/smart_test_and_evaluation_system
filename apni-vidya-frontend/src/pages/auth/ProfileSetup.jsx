@@ -24,7 +24,10 @@ export function ProfileSetup() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
+  const set = (k) => (e) => setForm(prev => ({
+    ...prev,
+    [k]: (k === 'phone' || k === 'parent_phone') ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value
+  }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
